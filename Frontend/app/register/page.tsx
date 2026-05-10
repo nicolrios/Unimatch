@@ -1,29 +1,17 @@
+"use client"
 
- "use client"
-export default function RegisterPage() {
-  return (
-    import { LandingNavbar } from "../../components/landing/navbar"
-import { HeroSection } from "../../components/landing/hero-section"
-import { HowItWorks } from "../../components/landing/how-it-works"
-import { BenefitsSection } from "../../components/landing/benefits-section"
-import { FeaturesGrid } from "../../components/landing/features-grid"
-import { CTASection } from "../../components/landing/cta-section"
+import { LandingNavbar } from "../../components/landing/navbar"
 import { Footer } from "../../components/landing/footer"
-export default function LandingPage() {
+
+export default function RegisterPage() {
   return (
     <main className="min-h-screen bg-background">
       <LandingNavbar />
-      <HeroSection />
-      <HowItWorks />
-      <BenefitsSection />
-      <FeaturesGrid />
-      <CTASection />
+      <div className="pt-24 pb-12 flex items-center justify-center">
+         <h1 className="text-4xl font-bold text-white">Página de Registro</h1>
+         {/* Aquí podés pegar tu formulario más tarde */}
+      </div>
       <Footer />
     </main>
   )
- }
-    // Aquí va todo el código de tu formulario
-  );
 }
- // desplegando portada
- 
