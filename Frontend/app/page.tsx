@@ -20,3 +20,4 @@ export default function LandingPage() {
     </main>
   )
  }
+ // desplegando portada
