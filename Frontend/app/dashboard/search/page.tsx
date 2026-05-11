@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { 
   Search, Filter, SlidersHorizontal, X, MapPin, 
@@ -23,94 +23,40 @@ const suggestedTopics = [
   "Calculo", "Python", "Estadistica", "Machine Learning", "Quimica"
 ]
 
-const mockStudents = [
-  {
-    id: 1,
-    name: "Maria Garcia",
-    university: "MIT",
-    career: "Computer Science",
-    country: "Estados Unidos",
-    topics: ["Bases de Datos", "SQL", "NoSQL"],
-    languages: ["Espanol", "Ingles"],
-    match: 95,
-    online: true,
-    timezone: "UTC-5",
-    avatar: "MG"
-  },
-  {
-    id: 2,
-    name: "John Smith",
-    university: "Stanford University",
-    career: "Data Science",
-    country: "Estados Unidos",
-    topics: ["Machine Learning", "Python", "Estadistica"],
-    languages: ["Ingles"],
-    match: 88,
-    online: true,
-    timezone: "UTC-8",
-    avatar: "JS"
-  },
-  {
-    id: 3,
-    name: "Ana Lopez",
-    university: "Universidad de Cambridge",
-    career: "Fisica",
-    country: "Reino Unido",
-    topics: ["Fisica Cuantica", "Calculo", "Algebra"],
-    languages: ["Espanol", "Ingles", "Frances"],
-    match: 92,
-    online: false,
-    timezone: "UTC+0",
-    avatar: "AL"
-  },
-  {
-    id: 4,
-    name: "Carlos Ruiz",
-    university: "UNAM",
-    career: "Ingenieria en Sistemas",
-    country: "Mexico",
-    topics: ["Algoritmos", "Java", "Estructuras de Datos"],
-    languages: ["Espanol"],
-    match: 85,
-    online: true,
-    timezone: "UTC-6",
-    avatar: "CR"
-  },
-  {
-    id: 5,
-    name: "Yuki Tanaka",
-    university: "Universidad de Tokio",
-    career: "Matematicas",
-    country: "Japon",
-    topics: ["Algebra Lineal", "Calculo", "Teoria de Numeros"],
-    languages: ["Japones", "Ingles"],
-    match: 78,
-    online: false,
-    timezone: "UTC+9",
-    avatar: "YT"
-  },
-  {
-    id: 6,
-    name: "Emma Schmidt",
-    university: "TU Munich",
-    career: "Ingenieria",
-    country: "Alemania",
-    topics: ["UML", "Bases de Datos", "Software Engineering"],
-    languages: ["Aleman", "Ingles"],
-    match: 91,
-    online: true,
-    timezone: "UTC+1",
-    avatar: "ES"
-  },
-]
-
 export default function SearchPage() {
+  // --- ESTADOS PARA DATOS REALES ---
+  const [students, setStudents] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  
+  // --- ESTADOS DE FILTROS ---
   const [searchQuery, setSearchQuery] = useState("")
   const [showFilters, setShowFilters] = useState(false)
   const [languageFilter, setLanguageFilter] = useState<string>("all")
-  const [timezoneFilter, setTimezoneFilter] = useState<string>("all")
   const [onlineFilter, setOnlineFilter] = useState<string>("all")
   const [showSuggestions, setShowSuggestions] = useState(false)
+
+  // --- LLAMADA A LA API ---
+  useEffect(() => {
+    const fetchStudents = async () => {
+      try {
+        setLoading(true)
+        // Usamos la URL de tu backend definida en Vercel
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+        const response = await fetch(`${apiUrl}/users`) // Ajusta '/users' según tu endpoint
+        
+        if (!response.ok) throw new Error("Error al obtener estudiantes")
+        
+        const data = await response.json()
+        setStudents(data)
+      } catch (error) {
+        console.error("Error en la conexión:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchStudents()
+  }, [])
 
   const filteredSuggestions = useMemo(() => {
     if (!searchQuery) return suggestedTopics
@@ -120,29 +66,29 @@ export default function SearchPage() {
   }, [searchQuery])
 
   const filteredStudents = useMemo(() => {
-    return mockStudents.filter(student => {
-      // Search filter
+    return students.filter(student => {
+      // Filtro de búsqueda (nombre, temas o universidad)
       if (searchQuery) {
         const query = searchQuery.toLowerCase()
         const matchesSearch = 
-          student.name.toLowerCase().includes(query) ||
-          student.topics.some(t => t.toLowerCase().includes(query)) ||
-          student.university.toLowerCase().includes(query)
+          (student.name?.toLowerCase().includes(query)) ||
+          (student.topics?.some((t: string) => t.toLowerCase().includes(query))) ||
+          (student.university?.toLowerCase().includes(query))
         if (!matchesSearch) return false
       }
       
-      // Language filter
-      if (languageFilter !== "all" && !student.languages.includes(languageFilter)) {
+      // Filtro de idioma
+      if (languageFilter !== "all" && !student.languages?.includes(languageFilter)) {
         return false
       }
       
-      // Online filter
+      // Filtro de estado online
       if (onlineFilter === "online" && !student.online) return false
       if (onlineFilter === "offline" && student.online) return false
       
       return true
-    }).sort((a, b) => b.match - a.match)
-  }, [searchQuery, languageFilter, onlineFilter])
+    }).sort((a, b) => (b.match || 0) - (a.match || 0))
+  }, [searchQuery, languageFilter, onlineFilter, students])
 
   const handleSelectTopic = (topic: string) => {
     setSearchQuery(topic)
@@ -158,10 +104,10 @@ export default function SearchPage() {
         transition={{ duration: 0.5 }}
       >
         <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">
-          Buscar companeros de estudio
+          Buscar compañeros de estudio
         </h1>
         <p className="text-muted-foreground">
-          Encuentra estudiantes que esten estudiando los mismos temas que tu
+          Encuentra estudiantes reales conectados a UniMatch
         </p>
       </motion.div>
 
@@ -177,7 +123,7 @@ export default function SearchPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
             <Input
               type="text"
-              placeholder="Escribe un tema: UML, Java, Calculo, Fisica..."
+              placeholder="Buscar por tema, universidad o nombre..."
               className="pl-10 py-6 bg-secondary border-border focus:border-primary text-lg"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -219,15 +165,10 @@ export default function SearchPage() {
           >
             <SlidersHorizontal className="w-5 h-5 mr-2" />
             Filtros
-            {(languageFilter !== "all" || onlineFilter !== "all") && (
-              <Badge className="ml-2 bg-primary text-primary-foreground">
-                {[languageFilter !== "all", onlineFilter !== "all"].filter(Boolean).length}
-              </Badge>
-            )}
           </Button>
         </div>
 
-        {/* Filters */}
+        {/* Filters Panel */}
         <AnimatePresence>
           {showFilters && (
             <motion.div
@@ -239,28 +180,23 @@ export default function SearchPage() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <label className="text-sm text-muted-foreground flex items-center gap-2">
-                    <Globe className="w-4 h-4" />
-                    Idioma
+                    <Globe className="w-4 h-4" /> Idioma
                   </label>
                   <Select value={languageFilter} onValueChange={setLanguageFilter}>
                     <SelectTrigger className="bg-secondary border-border">
-                      <SelectValue placeholder="Todos los idiomas" />
+                      <SelectValue placeholder="Todos" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Todos los idiomas</SelectItem>
-                      <SelectItem value="Espanol">Espanol</SelectItem>
-                      <SelectItem value="Ingles">Ingles</SelectItem>
-                      <SelectItem value="Frances">Frances</SelectItem>
-                      <SelectItem value="Aleman">Aleman</SelectItem>
-                      <SelectItem value="Japones">Japones</SelectItem>
+                      <SelectItem value="Espanol">Español</SelectItem>
+                      <SelectItem value="Ingles">Inglés</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-2">
                   <label className="text-sm text-muted-foreground flex items-center gap-2">
-                    <Clock className="w-4 h-4" />
-                    Disponibilidad
+                    <Clock className="w-4 h-4" /> Estado
                   </label>
                   <Select value={onlineFilter} onValueChange={setOnlineFilter}>
                     <SelectTrigger className="bg-secondary border-border">
@@ -268,7 +204,7 @@ export default function SearchPage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Todos</SelectItem>
-                      <SelectItem value="online">En linea ahora</SelectItem>
+                      <SelectItem value="online">En línea ahora</SelectItem>
                       <SelectItem value="offline">Desconectados</SelectItem>
                     </SelectContent>
                   </Select>
@@ -280,57 +216,28 @@ export default function SearchPage() {
                     className="text-muted-foreground"
                     onClick={() => {
                       setLanguageFilter("all")
-                      setTimezoneFilter("all")
                       setOnlineFilter("all")
                     }}
                   >
-                    <X className="w-4 h-4 mr-2" />
-                    Limpiar filtros
+                    <X className="w-4 h-4 mr-2" /> Limpiar
                   </Button>
                 </div>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
-
-        {/* Popular Topics */}
-        <div className="mt-4 flex flex-wrap gap-2">
-          <span className="text-sm text-muted-foreground mr-2">Populares:</span>
-          {suggestedTopics.slice(0, 5).map((topic, index) => (
-            <button
-              key={index}
-              onClick={() => handleSelectTopic(topic)}
-              className="px-3 py-1 rounded-full bg-secondary text-sm text-foreground hover:bg-primary/20 hover:text-primary transition-colors"
-            >
-              {topic}
-            </button>
-          ))}
-        </div>
       </motion.div>
 
-      {/* Results */}
+      {/* Results Section */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.2 }}
       >
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-foreground">
-            {filteredStudents.length} estudiantes encontrados
-          </h2>
-          <Select defaultValue="match">
-            <SelectTrigger className="w-40 bg-secondary border-border">
-              <SelectValue placeholder="Ordenar por" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="match">Mayor match</SelectItem>
-              <SelectItem value="recent">Mas reciente</SelectItem>
-              <SelectItem value="online">En linea primero</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        <h2 className="text-lg font-semibold text-foreground mb-4">
+          {loading ? "Cargando estudiantes..." : `${filteredStudents.length} estudiantes encontrados`}
+        </h2>
 
-        {/* Student Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {filteredStudents.map((student, index) => (
             <motion.div
@@ -339,14 +246,15 @@ export default function SearchPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: index * 0.05 }}
             >
-              <Card className="bg-card border-border hover:border-primary/50 transition-all duration-300 group">
+              <Card className="bg-card border-border hover:border-primary/50 transition-all duration-300">
                 <CardContent className="p-5">
-                  {/* Header */}
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <div className="relative">
                         <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
-                          <span className="text-primary font-bold">{student.avatar}</span>
+                          <span className="text-primary font-bold">
+                            {student.name?.substring(0, 2).toUpperCase()}
+                          </span>
                         </div>
                         {student.online && (
                           <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-card" />
@@ -358,48 +266,29 @@ export default function SearchPage() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-lg font-bold text-accent">{student.match}%</div>
+                      <div className="text-lg font-bold text-accent">{student.match || 0}%</div>
                       <div className="text-xs text-muted-foreground">match</div>
                     </div>
                   </div>
 
-                  {/* University & Location */}
                   <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
                     <MapPin className="w-4 h-4" />
                     <span>{student.university}</span>
                   </div>
 
-                  {/* Topics */}
                   <div className="flex flex-wrap gap-1.5 mb-4">
-                    {student.topics.map((topic, idx) => (
-                      <span
-                        key={idx}
-                        className="px-2 py-1 rounded-full bg-primary/10 text-primary text-xs"
-                      >
+                    {student.topics?.map((topic: string, idx: number) => (
+                      <span key={idx} className="px-2 py-1 rounded-full bg-primary/10 text-primary text-xs">
                         {topic}
                       </span>
                     ))}
                   </div>
 
-                  {/* Languages & Timezone */}
-                  <div className="flex items-center justify-between text-xs text-muted-foreground mb-4">
-                    <div className="flex items-center gap-1">
-                      <Globe className="w-3.5 h-3.5" />
-                      {student.languages.join(", ")}
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Clock className="w-3.5 h-3.5" />
-                      {student.timezone}
-                    </div>
-                  </div>
-
-                  {/* Actions */}
                   <div className="flex gap-2">
-                    <Button className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground">
-                      <UserPlus className="w-4 h-4 mr-2" />
-                      Conectar
+                    <Button className="flex-1 bg-primary hover:bg-primary/90">
+                      <UserPlus className="w-4 h-4 mr-2" /> Conectar
                     </Button>
-                    <Button variant="outline" size="icon" className="border-border">
+                    <Button variant="outline" size="icon">
                       <MessageSquare className="w-4 h-4" />
                     </Button>
                   </div>
@@ -409,18 +298,11 @@ export default function SearchPage() {
           ))}
         </div>
 
-        {/* Empty State */}
-        {filteredStudents.length === 0 && (
+        {!loading && filteredStudents.length === 0 && (
           <div className="text-center py-12">
-            <div className="w-16 h-16 rounded-full bg-secondary mx-auto mb-4 flex items-center justify-center">
-              <Search className="w-8 h-8 text-muted-foreground" />
-            </div>
-            <h3 className="text-lg font-semibold text-foreground mb-2">
-              No se encontraron estudiantes
-            </h3>
-            <p className="text-muted-foreground">
-              Intenta con otros terminos de busqueda o ajusta los filtros
-            </p>
+            <Search className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-foreground">No hay resultados</h3>
+            <p className="text-muted-foreground">Prueba con otros temas o filtros.</p>
           </div>
         )}
       </motion.div>
