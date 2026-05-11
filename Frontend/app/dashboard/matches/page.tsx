@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { useUser } from "@clerk/nextjs"
 import { 
   Search, Users, Clock, BookOpen, Star, 
-  Send, CheckCircle2, MessageSquare, UserPlus 
+  Send, CheckCircle2, UserPlus 
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -13,7 +13,6 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
-// Definición de la interfaz para usuarios reales
 interface MatchUser {
   id: string;
   name: string;
@@ -30,12 +29,23 @@ export default function MatchesPage() {
   const [loading, setLoading] = useState(true)
   const [sentRequests, setSentRequests] = useState<string[]>([])
 
-  // Función para obtener sugerencias reales desde el Backend
+  // Cargar temas desde localStorage para las estadísticas
+  const [topicCount, setTopicCount] = useState(0);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('unimatch_profile');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        setTopicCount(parsed.topics?.length || 0);
+      }
+    }
+  }, []);
+
   const fetchSuggestions = async () => {
     if (!user?.id) return;
     setLoading(true);
     try {
-      // URL de tu backend en Render
       const response = await fetch(`https://unimatch-nm86mqg53-nicolrios-projects.onrender.com/api/matches/suggestions/${user.id}`);
       const data = await response.json();
       setSuggestedMatches(data);
@@ -50,12 +60,12 @@ export default function MatchesPage() {
     if (isLoaded && user) fetchSuggestions();
   }, [isLoaded, user]);
 
-  // Función para enviar solicitud (Simulación lógica de red en Neo4j)
-  const handleSendRequest = async (targetId: string) => {
-    // Aquí iría el fetch a tu API de relaciones (:SOLICITUD_ENVIADA)
+  const handleSendRequest = (targetId: string) => {
     setSentRequests([...sentRequests, targetId]);
-    console.log(`Solicitud enviada a: ${targetId}`);
+    // Aquí podrías agregar un fetch a tu backend para guardar la relación de solicitud
   };
+
+  if (!isLoaded) return <div className="p-10 text-center">Cargando aplicación...</div>;
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-8">
@@ -64,7 +74,6 @@ export default function MatchesPage() {
         <p className="text-muted-foreground">Encontrá personas que estén estudiando lo mismo que vos.</p>
       </div>
 
-      {/* Buscador de compañeros */}
       <div className="flex gap-3 max-w-2xl">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -75,17 +84,15 @@ export default function MatchesPage() {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        <Button className="h-12 px-6 bg-primary hover:bg-primary/90">
-          Buscar Compañeros
-        </Button>
+        <Button className="h-12 px-6">Buscar Compañeros</Button>
       </div>
 
-      {/* Estadísticas rápidas */}
+      {/* ESTADÍSTICAS - Corrección del error ReactNode */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
           { label: "Matches activos", value: "0", icon: Users },
           { label: "Pendientes", value: "0", icon: Clock },
-          { label: "Temas de interés", value: user?.publicMetadata?.topicCount || "2", icon: BookOpen },
+          { label: "Temas de interés", value: topicCount.toString(), icon: BookOpen },
           { label: "Sugeridos", value: suggestedMatches.length.toString(), icon: Star },
         ].map((stat, i) => (
           <Card key={i} className="bg-card/50 border-border/50">
@@ -94,7 +101,8 @@ export default function MatchesPage() {
                 <stat.icon className="w-5 h-5" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{stat.value}</p>
+                {/* Convertimos explícitamente a string para evitar errores de TypeScript */}
+                <p className="text-2xl font-bold">{String(stat.value)}</p>
                 <p className="text-[10px] uppercase text-muted-foreground font-semibold">{stat.label}</p>
               </div>
             </CardContent>
@@ -123,7 +131,7 @@ export default function MatchesPage() {
                         <AvatarFallback className="bg-primary/10 text-primary">{match.name[0]}</AvatarFallback>
                       </Avatar>
                       <Badge variant="outline" className="text-primary border-primary/20 bg-primary/5">
-                        {match.matchPercentage || 85}% Match
+                        85% Match
                       </Badge>
                     </div>
                     <CardTitle className="mt-4 text-xl">{match.name}</CardTitle>
