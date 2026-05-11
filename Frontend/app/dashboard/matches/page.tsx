@@ -1,218 +1,172 @@
 "use client"
 
-import { useState } from "react"
-import { motion, AnimatePresence } from "framer-motion"
+import { useState, useEffect } from "react"
+import { useUser } from "@clerk/nextjs"
 import { 
-  Users, Clock, BookOpen, MessageSquare, 
-  Calendar, Star, MoreHorizontal, Check, X, Search, Sparkles
+  Search, Users, Clock, BookOpen, Star, 
+  Send, CheckCircle2, MessageSquare, UserPlus 
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import Link from "next/link"
-import { useUser } from "@clerk/nextjs"
 
-// --- ESTA ES LA PARTE QUE AGREGAMOS (EL MOLDE) ---
-interface Match {
-  id: number;
+// Definición de la interfaz para usuarios reales
+interface MatchUser {
+  id: string;
   name: string;
   university: string;
-  topics: string[];
-  commonTopics: number;
-  compatibleSchedule: boolean;
-  match: number;
-  online: boolean;
-  lastMessage: string;
-  avatar: string;
+  imageUrl: string;
+  commonTopics: string[];
+  matchPercentage?: number;
 }
 
 export default function MatchesPage() {
-  const { user } = useUser()
-  const [activeTab, setActiveTab] = useState("active")
+  const { user, isLoaded } = useUser()
   const [searchQuery, setSearchQuery] = useState("")
-  const [isSearching, setIsSearching] = useState(false)
-  
-  // --- CORREGIMOS LOS ESTADOS AGREGANDO <Match[]> ---
-  const [activeMatches, setActiveMatches] = useState<Match[]>([])
-  const [pendingMatches, setPendingMatches] = useState<Match[]>([])
-  const [suggestedMatches, setSuggestedMatches] = useState<Match[]>([])
+  const [suggestedMatches, setSuggestedMatches] = useState<MatchUser[]>([])
+  const [loading, setLoading] = useState(true)
+  const [sentRequests, setSentRequests] = useState<string[]>([])
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!searchQuery.trim()) return
+  // Función para obtener sugerencias reales desde el Backend
+  const fetchSuggestions = async () => {
+    if (!user?.id) return;
+    setLoading(true);
+    try {
+      // URL de tu backend en Render
+      const response = await fetch(`https://unimatch-nm86mqg53-nicolrios-projects.onrender.com/api/matches/suggestions/${user.id}`);
+      const data = await response.json();
+      setSuggestedMatches(data);
+    } catch (error) {
+      console.error("Error al cargar sugerencias:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    setIsSearching(true)
+  useEffect(() => {
+    if (isLoaded && user) fetchSuggestions();
+  }, [isLoaded, user]);
 
-    setTimeout(() => {
-      // Este es el "nuevo compañero" que aparece al buscar
-      const mockResult: Match = {
-        id: Math.random(),
-        name: "Nuevo Compañero",
-        university: "Universidad Compatible",
-        topics: [searchQuery, "Estudio General"],
-        commonTopics: 1,
-        compatibleSchedule: true,
-        match: Math.floor(Math.random() * (99 - 70 + 1)) + 70,
-        online: true,
-        lastMessage: "¡Hola! Vi que buscas " + searchQuery,
-        avatar: "NC"
-      }
-      
-      setSuggestedMatches([mockResult])
-      setIsSearching(false)
-      setActiveTab("suggested")
-    }, 1500)
-  }
+  // Función para enviar solicitud (Simulación lógica de red en Neo4j)
+  const handleSendRequest = async (targetId: string) => {
+    // Aquí iría el fetch a tu API de relaciones (:SOLICITUD_ENVIADA)
+    setSentRequests([...sentRequests, targetId]);
+    console.log(`Solicitud enviada a: ${targetId}`);
+  };
 
   return (
-    <div className="space-y-6">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
-        <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">
-          ¡Hola, {user?.firstName || "Estudiante"}!
-        </h1>
-        <p className="text-muted-foreground">
-          Encontrá personas que estén estudiando lo mismo que vos.
-        </p>
-      </motion.div>
+    <div className="p-6 max-w-6xl mx-auto space-y-8">
+      <div className="space-y-2">
+        <h1 className="text-3xl font-bold tracking-tight">¡Hola, {user?.firstName || "Estudiante"}!</h1>
+        <p className="text-muted-foreground">Encontrá personas que estén estudiando lo mismo que vos.</p>
+      </div>
 
-      <Card className="bg-primary/5 border-primary/20">
-        <CardContent className="p-6">
-          <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
-              <input 
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="¿Qué tema querés estudiar hoy? (ej: Calculo, SQL...)"
-                className="w-full bg-background border border-border rounded-xl py-2.5 pl-10 pr-4 outline-none focus:ring-2 focus:ring-primary transition-all text-foreground"
-              />
-            </div>
-            <Button type="submit" disabled={isSearching} className="bg-primary hover:bg-primary/90 text-white px-8">
-              {isSearching ? "Buscando..." : "Buscar Compañeros"}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+      {/* Buscador de compañeros */}
+      <div className="flex gap-3 max-w-2xl">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input 
+            placeholder="Buscar por materia (ej: calculo)..." 
+            className="pl-10 h-12 bg-card"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+        <Button className="h-12 px-6 bg-primary hover:bg-primary/90">
+          Buscar Compañeros
+        </Button>
+      </div>
 
+      {/* Estadísticas rápidas */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { icon: Users, label: "Matches activos", value: activeMatches.length },
-          { icon: Clock, label: "Pendientes", value: pendingMatches.length },
-          { icon: BookOpen, label: "Temas de interés", value: searchQuery ? 1 : 0 },
-          { icon: Star, label: "Sugeridos", value: suggestedMatches.length },
-        ].map((stat, index) => (
-          <Card key={index} className="bg-card border-border">
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                <stat.icon className="w-5 h-5 text-primary" />
+          { label: "Matches activos", value: "0", icon: Users },
+          { label: "Pendientes", value: "0", icon: Clock },
+          { label: "Temas de interés", value: user?.publicMetadata?.topicCount || "2", icon: BookOpen },
+          { label: "Sugeridos", value: suggestedMatches.length.toString(), icon: Star },
+        ].map((stat, i) => (
+          <Card key={i} className="bg-card/50 border-border/50">
+            <CardContent className="p-4 flex items-center gap-4">
+              <div className="p-2 bg-primary/10 rounded-lg text-primary">
+                <stat.icon className="w-5 h-5" />
               </div>
               <div>
-                <div className="text-2xl font-bold text-foreground">{stat.value}</div>
-                <div className="text-xs text-muted-foreground">{stat.label}</div>
+                <p className="text-2xl font-bold">{stat.value}</p>
+                <p className="text-[10px] uppercase text-muted-foreground font-semibold">{stat.label}</p>
               </div>
             </CardContent>
           </Card>
         ))}
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="bg-secondary border border-border">
-          <TabsTrigger value="active">Activos ({activeMatches.length})</TabsTrigger>
-          <TabsTrigger value="pending">Pendientes ({pendingMatches.length})</TabsTrigger>
-          <TabsTrigger value="suggested">Sugeridos ({suggestedMatches.length})</TabsTrigger>
+      <Tabs defaultValue="sugeridos" className="w-full">
+        <TabsList className="grid w-full max-w-md grid-cols-3 bg-secondary/20">
+          <TabsTrigger value="activos">Activos (0)</TabsTrigger>
+          <TabsTrigger value="pendientes">Pendientes (0)</TabsTrigger>
+          <TabsTrigger value="sugeridos">Sugeridos ({suggestedMatches.length})</TabsTrigger>
         </TabsList>
 
-        <AnimatePresence mode="wait">
-          <TabsContent value="active" className="mt-6">
-            {activeMatches.length === 0 ? (
-              <EmptyState 
-                title="Sin matches activos" 
-                desc="Todavía no aceptaste ninguna conexión. ¡Buscá temas arriba para empezar!" 
-              />
-            ) : (
-              <div className="space-y-4">
-                {/* Mapeo de matches activos */}
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="pending" className="mt-6">
-            {pendingMatches.length === 0 ? (
-              <EmptyState 
-                title="Sin solicitudes" 
-                desc="No tienes solicitudes de match pendientes en este momento." 
-              />
-            ) : (
-              <div className="space-y-4">
-                {/* Mapeo de matches pendientes */}
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="suggested" className="mt-6">
-            {suggestedMatches.length === 0 ? (
-              <EmptyState 
-                title="Buscá un compañero" 
-                desc="Escribí un tema en el buscador para que la IA de UniMatch te encuentre compañeros." 
-              />
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {suggestedMatches.map((match) => (
-                  <motion.div key={match.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                    <Card className="bg-card border-primary/30 border-2">
-                      <CardContent className="p-5">
-                        <div className="flex items-center gap-3 mb-4">
-                          <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center font-bold text-primary">
-                            {match.avatar}
-                          </div>
-                          <div>
-                            <h3 className="font-semibold text-foreground">{match.name}</h3>
-                            <p className="text-xs text-muted-foreground">{match.university}</p>
-                          </div>
-                          <div className="ml-auto text-primary font-bold">{match.match}%</div>
-                        </div>
-                        <div className="flex flex-wrap gap-1.5 mb-4">
-                          {match.topics.map((t, idx) => (
-                            <span key={idx} className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px]">{t}</span>
-                          ))}
-                        </div>
-                        <Button className="w-full bg-primary text-white hover:bg-primary/90">
-                          Enviar Solicitud
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                ))}
-              </div>
-            )}
-          </TabsContent>
-        </AnimatePresence>
+        <TabsContent value="sugeridos" className="mt-6">
+          {loading ? (
+            <p className="text-center py-10 text-muted-foreground">Buscando compañeros compatibles...</p>
+          ) : suggestedMatches.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {suggestedMatches.map((match) => (
+                <Card key={match.id} className="overflow-hidden border-border/50 hover:border-primary/30 transition-all">
+                  <CardHeader className="pb-2">
+                    <div className="flex justify-between items-start">
+                      <Avatar className="h-14 w-14 rounded-xl">
+                        <AvatarImage src={match.imageUrl} />
+                        <AvatarFallback className="bg-primary/10 text-primary">{match.name[0]}</AvatarFallback>
+                      </Avatar>
+                      <Badge variant="outline" className="text-primary border-primary/20 bg-primary/5">
+                        {match.matchPercentage || 85}% Match
+                      </Badge>
+                    </div>
+                    <CardTitle className="mt-4 text-xl">{match.name}</CardTitle>
+                    <p className="text-xs text-muted-foreground flex items-center gap-1 italic">
+                      <CheckCircle2 className="w-3 h-3 text-blue-500" /> {match.university}
+                    </p>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="flex flex-wrap gap-1.5">
+                      {match.commonTopics.map((topic) => (
+                        <Badge key={topic} variant="secondary" className="text-[10px] px-2 py-0 bg-secondary/50">
+                          {topic}
+                        </Badge>
+                      ))}
+                    </div>
+                    
+                    <Button 
+                      className="w-full h-10 gap-2"
+                      disabled={sentRequests.includes(match.id)}
+                      onClick={() => handleSendRequest(match.id)}
+                      variant={sentRequests.includes(match.id) ? "outline" : "default"}
+                    >
+                      {sentRequests.includes(match.id) ? (
+                        <><Send className="w-4 h-4" /> Solicitud Enviada</>
+                      ) : (
+                        <><UserPlus className="w-4 h-4" /> Enviar Solicitud</>
+                      )}
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-20 bg-secondary/5 rounded-3xl border-2 border-dashed">
+              <Users className="mx-auto h-12 w-12 text-muted-foreground/30 mb-4" />
+              <h3 className="text-lg font-medium">No hay sugerencias todavía</h3>
+              <p className="text-muted-foreground text-sm max-w-sm mx-auto mt-2">
+                Actualizá tus intereses en el perfil para que podamos recomendarte personas reales.
+              </p>
+            </div>
+          )}
+        </TabsContent>
       </Tabs>
     </div>
-  )
-}
-
-function EmptyState({ title, desc }: { title: string, desc: string }) {
-  return (
-    <motion.div 
-      initial={{ opacity: 0 }} 
-      animate={{ opacity: 1 }}
-      className="flex flex-col items-center justify-center py-20 text-center border-2 border-dashed border-border rounded-3xl"
-    >
-      <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
-        <Sparkles className="w-8 h-8 text-muted-foreground" />
-      </div>
-      <h3 className="text-xl font-semibold mb-1 text-foreground">{title}</h3>
-      <p className="text-muted-foreground max-w-xs">{desc}</p>
-    </motion.div>
   )
 }
