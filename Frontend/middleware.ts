@@ -6,7 +6,7 @@ export const config = {
   matcher: [
     // Ignora archivos estáticos y Next.js internals
     '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
-    // Siempre ejecuta para rutas de API
+    // Siempre se ejecuta para rutas de API
     '/(api|trpc)(.*)',
   ],
 };
