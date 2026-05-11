@@ -14,36 +14,20 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 
 export default function ProfilePage() {
-  const { isLoaded, isSignedIn, user } = useUser();
+  const { isLoaded, user } = useUser();
   const [isEditing, setIsEditing] = useState(false)
   const [newTopic, setNewTopic] = useState("")
 
-  // Datos extendidos del perfil
+  // Datos del perfil (puedes editarlos al pulsar el botón Editar)
   const [profile, setProfile] = useState({
     university: "Universidad Nacional",
     career: "Ingeniería en Sistemas",
     country: "Argentina",
-    timezone: "UTC-3",
-    bio: "¡Hola! Estoy configurando mi perfil para encontrar compañeros de estudio y colaborar en proyectos.",
-    level: "Intermedio",
+    bio: "¡Hola! Estoy configurando mi perfil para encontrar compañeros de estudio.",
     joinedDate: "2026",
-    topics: ["Programación", "Bases de Datos"],
-    languages: ["Español"],
-    stats: {
-      matches: 0,
-      sessions: 0,
-      hours: 0,
-      rating: 5.0
-    }
+    topics: ["Programación", "Cálculo"],
   })
 
   if (!isLoaded) {
@@ -53,6 +37,11 @@ export default function ProfilePage() {
       </div>
     )
   }
+
+  // Lógica para obtener el nombre o usar el email como nombre de usuario
+  const displayName = user?.firstName 
+    ? `${user.firstName} ${user.lastName || ""}` 
+    : user?.primaryEmailAddress?.emailAddress.split('@')[0] || "Usuario";
 
   const handleAddTopic = () => {
     if (newTopic && !profile.topics.includes(newTopic)) {
@@ -67,55 +56,50 @@ export default function ProfilePage() {
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto pb-10 px-4">
-      {/* Título de la página */}
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Mi Perfil</h1>
-          <p className="text-muted-foreground text-sm">Gestiona tu identidad en UniMatch</p>
+          <p className="text-muted-foreground text-sm">Gestiona tu identidad</p>
         </div>
         <Button
           onClick={() => setIsEditing(!isEditing)}
           variant={isEditing ? "default" : "outline"}
-          className="shadow-sm"
         >
           {isEditing ? (
-            <><Save className="w-4 h-4 mr-2" /> Guardar Cambios</>
+            <><Save className="w-4 h-4 mr-2" /> Guardar</>
           ) : (
-            <><Edit2 className="w-4 h-4 mr-2" /> Editar Perfil</>
+            <><Edit2 className="w-4 h-4 mr-2" /> Editar</>
           )}
         </Button>
       </div>
 
-      {/* Card de Cabecera Principal */}
+      {/* Card Principal con Foto y Nombre */}
       <Card className="overflow-hidden border-border bg-card shadow-md">
-        {/* Banner Decorativo */}
-        <div className="h-32 bg-gradient-to-r from-indigo-500/20 via-blue-500/20 to-teal-500/20" />
-        
+        <div className="h-32 bg-gradient-to-r from-blue-500/20 to-purple-500/20" />
         <CardContent className="relative pt-0 px-6 pb-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-end gap-5 -mt-10">
-            {/* Contenedor de la Foto */}
+            {/* Foto de Perfil */}
             <div className="relative">
               <div className="w-28 h-28 rounded-2xl border-4 border-card shadow-xl overflow-hidden bg-secondary">
                 <img 
                   src={user?.imageUrl} 
                   className="w-full h-full object-cover" 
-                  alt="Tu foto"
+                  alt="Perfil"
                 />
               </div>
-              <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-card" title="Conectado" />
+              <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-card" />
             </div>
 
-            {/* Contenedor del Nombre y Universidad */}
+            {/* Nombre Visible */}
             <div className="flex-1 mb-2">
-              <h2 className="text-3xl font-bold text-foreground tracking-tight">
-                {user?.firstName ? `${user.firstName} ${user.lastName}` : "Usuario UniMatch"}
+              <h2 className="text-3xl font-bold text-foreground tracking-tight capitalize">
+                {displayName}
               </h2>
               <div className="flex flex-wrap items-center gap-3 mt-1 text-muted-foreground">
                 <span className="flex items-center gap-1.5 font-medium text-primary">
-                  <Building className="w-4 h-4" /> 
-                  {profile.university}
+                  <Building className="w-4 h-4" /> {profile.university}
                 </span>
-                <span className="text-muted-foreground/40 hidden sm:inline">|</span>
                 <span className="flex items-center gap-1.5">
                   <MapPin className="w-4 h-4" /> {profile.country}
                 </span>
@@ -126,52 +110,45 @@ export default function ProfilePage() {
       </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Columna Izquierda: Información y Bio */}
         <div className="lg:col-span-2 space-y-6">
-          <Card className="shadow-sm">
+          <Card>
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
-                <User className="w-5 h-5 text-primary" /> Información Personal
+                <User className="w-5 h-5 text-primary" /> Información
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="space-y-3">
-                <Label className="text-sm font-semibold">Biografía</Label>
+              <div className="space-y-2">
+                <Label>Biografía</Label>
                 {isEditing ? (
                   <Textarea 
                     value={profile.bio} 
                     onChange={(e) => setProfile({...profile, bio: e.target.value})}
-                    className="min-h-[120px] bg-secondary/30"
-                    placeholder="Cuéntanos un poco sobre ti..."
+                    className="bg-secondary/20"
                   />
                 ) : (
-                  <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
-                    {profile.bio}
-                  </p>
+                  <p className="text-sm leading-relaxed">{profile.bio}</p>
                 )}
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-border/50">
-                <div className="space-y-1.5">
-                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Correo Electrónico</Label>
-                  <div className="flex items-center gap-2 text-sm font-medium">
-                    <Mail className="w-4 h-4 text-primary/60" />
-                    {user?.primaryEmailAddress?.emailAddress}
-                  </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-border">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Email</Label>
+                  <p className="text-sm font-medium flex items-center gap-2">
+                    <Mail className="w-4 h-4" /> {user?.primaryEmailAddress?.emailAddress}
+                  </p>
                 </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Carrera Actual</Label>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Carrera</Label>
                   {isEditing ? (
                     <Input 
                       value={profile.career} 
                       onChange={(e) => setProfile({...profile, career: e.target.value})}
-                      className="h-9 bg-secondary/30"
                     />
                   ) : (
-                    <div className="flex items-center gap-2 text-sm font-medium">
-                      <GraduationCap className="w-4 h-4 text-primary/60" />
-                      {profile.career}
-                    </div>
+                    <p className="text-sm font-medium flex items-center gap-2">
+                      <GraduationCap className="w-4 h-4" /> {profile.career}
+                    </p>
                   )}
                 </div>
               </div>
@@ -179,52 +156,34 @@ export default function ProfilePage() {
           </Card>
         </div>
 
-        {/* Columna Derecha: Temas e Intereses */}
         <div className="space-y-6">
-          <Card className="shadow-sm">
+          <Card>
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
-                <BookOpen className="w-5 h-5 text-primary" /> Especialidades
+                <BookOpen className="w-5 h-5 text-primary" /> Intereses
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex flex-wrap gap-2">
                 {profile.topics.map((t) => (
-                  <Badge key={t} variant="secondary" className="px-3 py-1 rounded-lg bg-primary/5 text-primary border-primary/10 transition-all">
+                  <Badge key={t} variant="secondary">
                     {t}
                     {isEditing && (
-                      <X 
-                        className="w-3 h-3 ml-2 cursor-pointer hover:text-destructive" 
-                        onClick={() => handleRemoveTopic(t)} 
-                      />
+                      <X className="w-3 h-3 ml-2 cursor-pointer" onClick={() => handleRemoveTopic(t)} />
                     )}
                   </Badge>
                 ))}
               </div>
-              
               {isEditing && (
-                <div className="flex gap-2 pt-2">
+                <div className="flex gap-2">
                   <Input 
                     value={newTopic} 
                     onChange={(e) => setNewTopic(e.target.value)} 
-                    placeholder="Ej: React..." 
-                    className="h-9"
-                    onKeyDown={(e) => e.key === 'Enter' && handleAddTopic()}
+                    placeholder="Nuevo tema..." 
                   />
-                  <Button size="icon" className="h-9 w-9 shrink-0" onClick={handleAddTopic}>
-                    <Plus className="w-4 h-4" />
-                  </Button>
+                  <Button size="icon" onClick={handleAddTopic}><Plus className="w-4 h-4" /></Button>
                 </div>
               )}
-
-              <div className="pt-4 mt-2 border-t border-border/50">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground flex items-center gap-2">
-                    <Calendar className="w-4 h-4" /> Desde:
-                  </span>
-                  <span className="font-medium">{profile.joinedDate}</span>
-                </div>
-              </div>
             </CardContent>
           </Card>
         </div>
