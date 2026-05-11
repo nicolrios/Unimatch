@@ -1,13 +1,13 @@
 "use client"
 
 import { useState } from "react"
-import { motion } from "framer-motion"
+import { motion, AnimatePresence } from "framer-motion"
 import { 
-  Users, Clock, Globe, BookOpen, MessageSquare, 
-  Calendar, Star, MoreHorizontal, Check, X
+  Users, Clock, BookOpen, MessageSquare, 
+  Calendar, Star, MoreHorizontal, Check, X, Search, Sparkles
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   DropdownMenu,
@@ -16,136 +16,99 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import Link from "next/link"
+import { useUser } from "@clerk/nextjs"
 
-const activeMatches = [
-  {
-    id: 1,
-    name: "Maria Garcia",
-    university: "MIT",
-    topics: ["Calculo III", "Algebra Lineal"],
-    commonTopics: 2,
-    compatibleSchedule: true,
-    match: 95,
-    online: true,
-    lastMessage: "Nos vemos manana a las 3pm!",
-    lastActive: "Hace 5 min",
-    avatar: "MG"
-  },
-  {
-    id: 2,
-    name: "John Smith",
-    university: "Stanford",
-    topics: ["Bases de Datos", "SQL"],
-    commonTopics: 3,
-    compatibleSchedule: true,
-    match: 88,
-    online: true,
-    lastMessage: "El ejercicio 5 esta complicado",
-    lastActive: "Hace 20 min",
-    avatar: "JS"
-  },
-  {
-    id: 3,
-    name: "Ana Lopez",
-    university: "Cambridge",
-    topics: ["Fisica Cuantica"],
-    commonTopics: 1,
-    compatibleSchedule: false,
-    match: 92,
-    online: false,
-    lastMessage: "Gracias por la explicacion!",
-    lastActive: "Hace 2 horas",
-    avatar: "AL"
-  },
-]
-
-const pendingMatches = [
-  {
-    id: 4,
-    name: "Carlos Ruiz",
-    university: "UNAM",
-    topics: ["Algoritmos", "Java"],
-    match: 85,
-    online: true,
-    requestedAt: "Hace 1 hora",
-    avatar: "CR"
-  },
-  {
-    id: 5,
-    name: "Emma Schmidt",
-    university: "TU Munich",
-    topics: ["UML", "Software Engineering"],
-    match: 91,
-    online: false,
-    requestedAt: "Hace 3 horas",
-    avatar: "ES"
-  },
-]
-
-const suggestedMatches = [
-  {
-    id: 6,
-    name: "Yuki Tanaka",
-    university: "Universidad de Tokio",
-    topics: ["Algebra Lineal", "Calculo"],
-    match: 78,
-    online: false,
-    reason: "Estudia los mismos temas que tu",
-    avatar: "YT"
-  },
-  {
-    id: 7,
-    name: "Pierre Dubois",
-    university: "Sorbonne",
-    topics: ["Estadistica", "Probabilidad"],
-    match: 82,
-    online: true,
-    reason: "Horario compatible contigo",
-    avatar: "PD"
-  },
-  {
-    id: 8,
-    name: "Sofia Martinez",
-    university: "UBA",
-    topics: ["Python", "Machine Learning"],
-    match: 75,
-    online: true,
-    reason: "Habla tu mismo idioma",
-    avatar: "SM"
-  },
-]
+// --- ESTA ES LA PARTE QUE AGREGAMOS (EL MOLDE) ---
+interface Match {
+  id: number;
+  name: string;
+  university: string;
+  topics: string[];
+  commonTopics: number;
+  compatibleSchedule: boolean;
+  match: number;
+  online: boolean;
+  lastMessage: string;
+  avatar: string;
+}
 
 export default function MatchesPage() {
+  const { user } = useUser()
   const [activeTab, setActiveTab] = useState("active")
+  const [searchQuery, setSearchQuery] = useState("")
+  const [isSearching, setIsSearching] = useState(false)
+  
+  // --- CORREGIMOS LOS ESTADOS AGREGANDO <Match[]> ---
+  const [activeMatches, setActiveMatches] = useState<Match[]>([])
+  const [pendingMatches, setPendingMatches] = useState<Match[]>([])
+  const [suggestedMatches, setSuggestedMatches] = useState<Match[]>([])
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!searchQuery.trim()) return
+
+    setIsSearching(true)
+
+    setTimeout(() => {
+      // Este es el "nuevo compañero" que aparece al buscar
+      const mockResult: Match = {
+        id: Math.random(),
+        name: "Nuevo Compañero",
+        university: "Universidad Compatible",
+        topics: [searchQuery, "Estudio General"],
+        commonTopics: 1,
+        compatibleSchedule: true,
+        match: Math.floor(Math.random() * (99 - 70 + 1)) + 70,
+        online: true,
+        lastMessage: "¡Hola! Vi que buscas " + searchQuery,
+        avatar: "NC"
+      }
+      
+      setSuggestedMatches([mockResult])
+      setIsSearching(false)
+      setActiveTab("suggested")
+    }, 1500)
+  }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
       >
         <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">
-          Mis Matches
+          ¡Hola, {user?.firstName || "Estudiante"}!
         </h1>
         <p className="text-muted-foreground">
-          Gestiona tus conexiones y encuentra nuevos companeros de estudio
+          Encontrá personas que estén estudiando lo mismo que vos.
         </p>
       </motion.div>
 
-      {/* Stats */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.1 }}
-        className="grid grid-cols-2 md:grid-cols-4 gap-4"
-      >
+      <Card className="bg-primary/5 border-primary/20">
+        <CardContent className="p-6">
+          <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
+              <input 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="¿Qué tema querés estudiar hoy? (ej: Calculo, SQL...)"
+                className="w-full bg-background border border-border rounded-xl py-2.5 pl-10 pr-4 outline-none focus:ring-2 focus:ring-primary transition-all text-foreground"
+              />
+            </div>
+            <Button type="submit" disabled={isSearching} className="bg-primary hover:bg-primary/90 text-white px-8">
+              {isSearching ? "Buscando..." : "Buscar Compañeros"}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
           { icon: Users, label: "Matches activos", value: activeMatches.length },
           { icon: Clock, label: "Pendientes", value: pendingMatches.length },
-          { icon: BookOpen, label: "Temas en comun", value: 8 },
-          { icon: Star, label: "Favoritos", value: 3 },
+          { icon: BookOpen, label: "Temas de interés", value: searchQuery ? 1 : 0 },
+          { icon: Star, label: "Sugeridos", value: suggestedMatches.length },
         ].map((stat, index) => (
           <Card key={index} className="bg-card border-border">
             <CardContent className="p-4 flex items-center gap-3">
@@ -159,239 +122,97 @@ export default function MatchesPage() {
             </CardContent>
           </Card>
         ))}
-      </motion.div>
+      </div>
 
-      {/* Tabs */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.2 }}
-      >
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="bg-secondary border border-border">
-            <TabsTrigger value="active" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              Activos ({activeMatches.length})
-            </TabsTrigger>
-            <TabsTrigger value="pending" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              Pendientes ({pendingMatches.length})
-            </TabsTrigger>
-            <TabsTrigger value="suggested" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              Sugeridos
-            </TabsTrigger>
-          </TabsList>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="bg-secondary border border-border">
+          <TabsTrigger value="active">Activos ({activeMatches.length})</TabsTrigger>
+          <TabsTrigger value="pending">Pendientes ({pendingMatches.length})</TabsTrigger>
+          <TabsTrigger value="suggested">Sugeridos ({suggestedMatches.length})</TabsTrigger>
+        </TabsList>
 
-          {/* Active Matches */}
+        <AnimatePresence mode="wait">
           <TabsContent value="active" className="mt-6">
-            <div className="space-y-4">
-              {activeMatches.map((match, index) => (
-                <motion.div
-                  key={match.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.3, delay: index * 0.05 }}
-                >
-                  <Card className="bg-card border-border hover:border-primary/30 transition-colors">
-                    <CardContent className="p-4 sm:p-6">
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        {/* User Info */}
-                        <div className="flex items-center gap-4">
-                          <div className="relative">
-                            <div className="w-14 h-14 rounded-full bg-primary/20 flex items-center justify-center">
-                              <span className="text-primary font-bold text-lg">{match.avatar}</span>
-                            </div>
-                            {match.online && (
-                              <div className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 rounded-full border-2 border-card" />
-                            )}
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <h3 className="font-semibold text-foreground">{match.name}</h3>
-                              <span className="text-accent font-medium text-sm">{match.match}% match</span>
-                            </div>
-                            <p className="text-sm text-muted-foreground">{match.university}</p>
-                            <div className="flex flex-wrap gap-1.5 mt-2">
-                              {match.topics.map((topic, idx) => (
-                                <span
-                                  key={idx}
-                                  className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs"
-                                >
-                                  {topic}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Stats & Actions */}
-                        <div className="flex flex-col sm:items-end gap-3">
-                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                            <div className="flex items-center gap-1">
-                              <BookOpen className="w-4 h-4" />
-                              {match.commonTopics} temas
-                            </div>
-                            {match.compatibleSchedule && (
-                              <div className="flex items-center gap-1 text-green-500">
-                                <Clock className="w-4 h-4" />
-                                Horario compatible
-                              </div>
-                            )}
-                          </div>
-                          <p className="text-sm text-muted-foreground truncate max-w-xs">
-                            &ldquo;{match.lastMessage}&rdquo;
-                          </p>
-                          <div className="flex items-center gap-2">
-                            <Link href="/dashboard/chat">
-                              <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                                <MessageSquare className="w-4 h-4 mr-2" />
-                                Mensaje
-                              </Button>
-                            </Link>
-                            <Button variant="outline" className="border-border">
-                              <Calendar className="w-4 h-4 mr-2" />
-                              Agendar
-                            </Button>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon">
-                                  <MoreHorizontal className="w-4 h-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem>Ver perfil</DropdownMenuItem>
-                                <DropdownMenuItem>Agregar a favoritos</DropdownMenuItem>
-                                <DropdownMenuItem className="text-destructive">Eliminar match</DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ))}
-            </div>
+            {activeMatches.length === 0 ? (
+              <EmptyState 
+                title="Sin matches activos" 
+                desc="Todavía no aceptaste ninguna conexión. ¡Buscá temas arriba para empezar!" 
+              />
+            ) : (
+              <div className="space-y-4">
+                {/* Mapeo de matches activos */}
+              </div>
+            )}
           </TabsContent>
 
-          {/* Pending Matches */}
           <TabsContent value="pending" className="mt-6">
-            <div className="space-y-4">
-              {pendingMatches.map((match, index) => (
-                <motion.div
-                  key={match.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.3, delay: index * 0.05 }}
-                >
-                  <Card className="bg-card border-border border-l-4 border-l-primary">
-                    <CardContent className="p-4 sm:p-6">
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div className="flex items-center gap-4">
-                          <div className="relative">
-                            <div className="w-14 h-14 rounded-full bg-primary/20 flex items-center justify-center">
-                              <span className="text-primary font-bold text-lg">{match.avatar}</span>
-                            </div>
-                            {match.online && (
-                              <div className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 rounded-full border-2 border-card" />
-                            )}
+            {pendingMatches.length === 0 ? (
+              <EmptyState 
+                title="Sin solicitudes" 
+                desc="No tienes solicitudes de match pendientes en este momento." 
+              />
+            ) : (
+              <div className="space-y-4">
+                {/* Mapeo de matches pendientes */}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="suggested" className="mt-6">
+            {suggestedMatches.length === 0 ? (
+              <EmptyState 
+                title="Buscá un compañero" 
+                desc="Escribí un tema en el buscador para que la IA de UniMatch te encuentre compañeros." 
+              />
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {suggestedMatches.map((match) => (
+                  <motion.div key={match.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                    <Card className="bg-card border-primary/30 border-2">
+                      <CardContent className="p-5">
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center font-bold text-primary">
+                            {match.avatar}
                           </div>
                           <div>
-                            <div className="flex items-center gap-2">
-                              <h3 className="font-semibold text-foreground">{match.name}</h3>
-                              <span className="text-accent font-medium text-sm">{match.match}% match</span>
-                            </div>
-                            <p className="text-sm text-muted-foreground">{match.university}</p>
-                            <div className="flex flex-wrap gap-1.5 mt-2">
-                              {match.topics.map((topic, idx) => (
-                                <span
-                                  key={idx}
-                                  className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs"
-                                >
-                                  {topic}
-                                </span>
-                              ))}
-                            </div>
-                            <p className="text-xs text-muted-foreground mt-2">
-                              Solicitud enviada {match.requestedAt}
-                            </p>
+                            <h3 className="font-semibold text-foreground">{match.name}</h3>
+                            <p className="text-xs text-muted-foreground">{match.university}</p>
                           </div>
+                          <div className="ml-auto text-primary font-bold">{match.match}%</div>
                         </div>
-
-                        <div className="flex items-center gap-2">
-                          <Button className="bg-green-600 hover:bg-green-700 text-white">
-                            <Check className="w-4 h-4 mr-2" />
-                            Aceptar
-                          </Button>
-                          <Button variant="outline" className="border-border text-destructive hover:text-destructive">
-                            <X className="w-4 h-4 mr-2" />
-                            Rechazar
-                          </Button>
+                        <div className="flex flex-wrap gap-1.5 mb-4">
+                          {match.topics.map((t, idx) => (
+                            <span key={idx} className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px]">{t}</span>
+                          ))}
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ))}
-            </div>
+                        <Button className="w-full bg-primary text-white hover:bg-primary/90">
+                          Enviar Solicitud
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                ))}
+              </div>
+            )}
           </TabsContent>
-
-          {/* Suggested Matches */}
-          <TabsContent value="suggested" className="mt-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {suggestedMatches.map((match, index) => (
-                <motion.div
-                  key={match.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: index * 0.05 }}
-                >
-                  <Card className="bg-card border-border hover:border-primary/30 transition-colors h-full">
-                    <CardContent className="p-5">
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="relative">
-                          <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
-                            <span className="text-primary font-bold">{match.avatar}</span>
-                          </div>
-                          {match.online && (
-                            <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-card" />
-                          )}
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-foreground">{match.name}</h3>
-                          <p className="text-sm text-muted-foreground">{match.university}</p>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-lg font-bold text-accent">{match.match}%</div>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-wrap gap-1.5 mb-3">
-                        {match.topics.map((topic, idx) => (
-                          <span
-                            key={idx}
-                            className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs"
-                          >
-                            {topic}
-                          </span>
-                        ))}
-                      </div>
-
-                      <p className="text-sm text-muted-foreground mb-4 flex items-center gap-1">
-                        <Star className="w-4 h-4 text-accent" />
-                        {match.reason}
-                      </p>
-
-                      <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
-                        <Users className="w-4 h-4 mr-2" />
-                        Conectar
-                      </Button>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ))}
-            </div>
-          </TabsContent>
-        </Tabs>
-      </motion.div>
+        </AnimatePresence>
+      </Tabs>
     </div>
+  )
+}
+
+function EmptyState({ title, desc }: { title: string, desc: string }) {
+  return (
+    <motion.div 
+      initial={{ opacity: 0 }} 
+      animate={{ opacity: 1 }}
+      className="flex flex-col items-center justify-center py-20 text-center border-2 border-dashed border-border rounded-3xl"
+    >
+      <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
+        <Sparkles className="w-8 h-8 text-muted-foreground" />
+      </div>
+      <h3 className="text-xl font-semibold mb-1 text-foreground">{title}</h3>
+      <p className="text-muted-foreground max-w-xs">{desc}</p>
+    </motion.div>
   )
 }
