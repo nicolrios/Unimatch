@@ -17,7 +17,6 @@ export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false)
   const [newTopic, setNewTopic] = useState("")
 
-  // Estado del perfil con persistencia
   const [profile, setProfile] = useState(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('unimatch_profile');
@@ -31,7 +30,6 @@ export default function ProfilePage() {
         topics: ["Programación", "Cálculo"],
       };
     }
-    return { name: "", university: "", career: "", country: "", bio: "", joinedDate: "2026", topics: [] };
   });
 
   useEffect(() => {
@@ -46,18 +44,38 @@ export default function ProfilePage() {
     }
   }, [isLoaded, isSignedIn, user]);
 
-  if (!isLoaded) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-      </div>
-    )
-  }
+  // --- NUEVA FUNCIÓN PARA GUARDAR EN EL BACKEND ---
+  const handleSave = async () => {
+    try {
+      // 1. Guardar localmente
+      localStorage.setItem('unimatch_profile', JSON.stringify(profile));
 
-  const handleSave = () => {
-    localStorage.setItem('unimatch_profile', JSON.stringify(profile));
-    setIsEditing(false);
+      // 2. Enviar al Backend de Render (Neo4j)
+      const response = await fetch("https://unimatch-nm86mqg53-nicolrios-projects.onrender.com/api/profile/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          clerkId: user?.id,
+          name: profile.name,
+          university: profile.university,
+          topics: profile.topics,
+          imageUrl: user?.imageUrl
+        }),
+      });
+
+      if (response.ok) {
+        console.log("Perfil sincronizado con Neo4j");
+        setIsEditing(false);
+      } else {
+        alert("Error al sincronizar con el servidor");
+      }
+    } catch (error) {
+      console.error("Error en la conexión:", error);
+      alert("No se pudo conectar con el servidor de Render");
+    }
   };
+
+  if (!isLoaded) return <div className="p-10 text-center">Cargando...</div>;
 
   const handleAddTopic = () => {
     if (newTopic && !profile.topics.includes(newTopic)) {
@@ -66,7 +84,6 @@ export default function ProfilePage() {
     }
   }
 
-  // Se añade el tipo ': string' para corregir el error de TypeScript
   const handleRemoveTopic = (topic: string) => {
     setProfile({ ...profile, topics: profile.topics.filter((t: string) => t !== topic) })
   }
@@ -76,17 +93,13 @@ export default function ProfilePage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Mi Perfil</h1>
-          <p className="text-muted-foreground text-sm">Tus datos se guardan en este navegador</p>
+          <p className="text-muted-foreground text-sm">Los cambios se guardarán en la base de datos de matches</p>
         </div>
         <Button
           onClick={isEditing ? handleSave : () => setIsEditing(true)}
           variant={isEditing ? "default" : "outline"}
         >
-          {isEditing ? (
-            <><Save className="w-4 h-4 mr-2" /> Guardar Cambios</>
-          ) : (
-            <><Edit2 className="w-4 h-4 mr-2" /> Editar Perfil</>
-          )}
+          {isEditing ? <><Save className="w-4 h-4 mr-2" /> Guardar y Sincronizar</> : <><Edit2 className="w-4 h-4 mr-2" /> Editar Perfil</>}
         </Button>
       </div>
 
@@ -98,35 +111,19 @@ export default function ProfilePage() {
               <div className="w-28 h-28 rounded-2xl border-4 border-card shadow-xl overflow-hidden bg-secondary">
                 <img src={user?.imageUrl} className="w-full h-full object-cover" alt="Perfil" />
               </div>
-              <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-card" />
             </div>
 
             <div className="flex-1 mb-2 space-y-2 w-full">
               {isEditing ? (
                 <div className="space-y-3 max-w-md">
-                   <div className="space-y-1">
-                    <Label className="text-[10px] uppercase font-bold text-primary">Nombre Completo</Label>
-                    <Input 
-                      value={profile.name} 
-                      onChange={(e) => setProfile({...profile, name: e.target.value})}
-                      className="text-xl font-bold bg-secondary/40 h-10"
-                    />
-                   </div>
-                   <div className="space-y-1">
-                    <Label className="text-[10px] uppercase font-bold text-primary">Universidad</Label>
-                    <Input 
-                      value={profile.university} 
-                      onChange={(e) => setProfile({...profile, university: e.target.value})}
-                      className="text-sm bg-secondary/40 h-9"
-                    />
-                   </div>
+                   <Input value={profile.name} onChange={(e) => setProfile({...profile, name: e.target.value})} className="text-xl font-bold" />
+                   <Input value={profile.university} onChange={(e) => setProfile({...profile, university: e.target.value})} className="text-sm" />
                 </div>
               ) : (
                 <>
                   <h2 className="text-3xl font-bold tracking-tight capitalize">{profile.name}</h2>
                   <div className="flex flex-wrap items-center gap-3 mt-1 text-muted-foreground text-sm font-medium">
                     <span className="flex items-center gap-1.5 text-primary"><Building className="w-4 h-4" /> {profile.university}</span>
-                    <span className="flex items-center gap-1.5"><MapPin className="w-4 h-4" /> {profile.country}</span>
                   </div>
                 </>
               )}
@@ -138,36 +135,17 @@ export default function ProfilePage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
           <Card>
-            <CardHeader><CardTitle className="text-lg flex items-center gap-2"><User className="w-5 h-5 text-primary" /> Bio</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-lg flex items-center gap-2 font-bold">Información</CardTitle></CardHeader>
             <CardContent className="space-y-4">
-              {isEditing ? (
-                <Textarea value={profile.bio} onChange={(e) => setProfile({...profile, bio: e.target.value})} className="bg-secondary/10 min-h-[100px]" />
-              ) : (
-                <p className="text-sm leading-relaxed">{profile.bio}</p>
-              )}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-border">
-                <div className="space-y-1">
-                  <Label className="text-[11px] text-muted-foreground uppercase">Email</Label>
-                  <p className="text-sm font-medium flex items-center gap-2"><Mail className="w-4 h-4 text-primary/50" /> {user?.primaryEmailAddress?.emailAddress}</p>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-[11px] text-muted-foreground uppercase">Carrera</Label>
-                  {isEditing ? (
-                    <Input value={profile.career} onChange={(e) => setProfile({...profile, career: e.target.value})} className="h-8" />
-                  ) : (
-                    <p className="text-sm font-medium flex items-center gap-2"><GraduationCap className="w-4 h-4 text-primary/50" /> {profile.career}</p>
-                  )}
-                </div>
-              </div>
+              {isEditing ? <Textarea value={profile.bio} onChange={(e) => setProfile({...profile, bio: e.target.value})} className="min-h-[100px]" /> : <p className="text-sm">{profile.bio}</p>}
             </CardContent>
           </Card>
         </div>
 
         <Card>
-          <CardHeader><CardTitle className="text-lg flex items-center gap-2"><BookOpen className="w-5 h-5 text-primary" /> Temas</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-lg flex items-center gap-2 font-bold text-primary">Temas de Interés</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <div className="flex flex-wrap gap-2">
-              {/* Se añade el tipo ': string' para corregir el segundo error */}
               {profile.topics.map((t: string) => (
                 <Badge key={t} variant="secondary">
                   {t}
