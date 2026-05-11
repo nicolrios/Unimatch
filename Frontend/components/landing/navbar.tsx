@@ -5,9 +5,11 @@ import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
 import { Menu, X, GraduationCap } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { useUser, UserButton } from "@clerk/nextjs"
 
 export function LandingNavbar() {
   const [isOpen, setIsOpen] = useState(false)
+  const { isSignedIn, user } = useUser()
 
   const navLinks = [
     { href: "#how-it-works", label: "Como funciona" },
@@ -52,16 +54,28 @@ export function LandingNavbar() {
 
           {/* Desktop CTA */}
           <div className="hidden md:flex items-center gap-3">
-            <Link href="/login">
-              <Button variant="ghost" className="text-muted-foreground hover:text-foreground">
-                Iniciar sesion
-              </Button>
-            </Link>
-            <Link href="/register">
-              <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                Registrarse
-              </Button>
-            </Link>
+            {isSignedIn ? (
+              <div className="flex items-center gap-4">
+                <span className="text-sm font-medium text-foreground">
+                  Hola, {user?.firstName}
+                </span>
+                {/* Se eliminó afterSignOutUrl porque ahora se maneja en el .env */}
+                <UserButton />
+              </div>
+            ) : (
+              <>
+                <Link href="/login">
+                  <Button variant="ghost" className="text-muted-foreground hover:text-foreground">
+                    Iniciar sesion
+                  </Button>
+                </Link>
+                <Link href="/register">
+                  <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                    Registrarse
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -95,16 +109,27 @@ export function LandingNavbar() {
                 </Link>
               ))}
               <div className="pt-3 border-t border-border space-y-2">
-                <Link href="/login" className="block">
-                  <Button variant="ghost" className="w-full justify-start">
-                    Iniciar sesion
-                  </Button>
-                </Link>
-                <Link href="/register" className="block">
-                  <Button className="w-full bg-primary hover:bg-primary/90">
-                    Registrarse
-                  </Button>
-                </Link>
+                {isSignedIn ? (
+                  <div className="flex items-center justify-between px-2 py-2">
+                    <span className="text-sm font-medium text-foreground">
+                      {user?.firstName}
+                    </span>
+                    <UserButton />
+                  </div>
+                ) : (
+                  <>
+                    <Link href="/login" className="block">
+                      <Button variant="ghost" className="w-full justify-start">
+                        Iniciar sesion
+                      </Button>
+                    </Link>
+                    <Link href="/register" className="block">
+                      <Button className="w-full bg-primary hover:bg-primary/90">
+                        Registrarse
+                      </Button>
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
           </motion.div>
