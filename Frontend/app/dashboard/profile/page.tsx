@@ -17,7 +17,7 @@ export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false)
   const [newTopic, setNewTopic] = useState("")
 
-  // Estado del perfil con persistencia en LocalStorage
+  // Estado del perfil con persistencia
   const [profile, setProfile] = useState(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('unimatch_profile');
@@ -34,7 +34,6 @@ export default function ProfilePage() {
     return { name: "", university: "", career: "", country: "", bio: "", joinedDate: "2026", topics: [] };
   });
 
-  // Sincronizar con Clerk solo la primera vez si no hay nombre guardado
   useEffect(() => {
     if (isLoaded && isSignedIn && user && !profile.name) {
       const initialName = user.firstName 
@@ -55,7 +54,6 @@ export default function ProfilePage() {
     )
   }
 
-  // Función para guardar cambios definitivamente
   const handleSave = () => {
     localStorage.setItem('unimatch_profile', JSON.stringify(profile));
     setIsEditing(false);
@@ -68,8 +66,9 @@ export default function ProfilePage() {
     }
   }
 
+  // Se añade el tipo ': string' para corregir el error de TypeScript
   const handleRemoveTopic = (topic: string) => {
-    setProfile({ ...profile, topics: profile.topics.filter(t => t !== topic) })
+    setProfile({ ...profile, topics: profile.topics.filter((t: string) => t !== topic) })
   }
 
   return (
@@ -168,7 +167,8 @@ export default function ProfilePage() {
           <CardHeader><CardTitle className="text-lg flex items-center gap-2"><BookOpen className="w-5 h-5 text-primary" /> Temas</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <div className="flex flex-wrap gap-2">
-              {profile.topics.map((t) => (
+              {/* Se añade el tipo ': string' para corregir el segundo error */}
+              {profile.topics.map((t: string) => (
                 <Badge key={t} variant="secondary">
                   {t}
                   {isEditing && <X className="w-3 h-3 ml-2 cursor-pointer" onClick={() => handleRemoveTopic(t)} />}
