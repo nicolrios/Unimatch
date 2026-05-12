@@ -31,31 +31,38 @@ export default function FuturisticProfile() {
 
   const handleSave = async () => {
     try {
+      const dataToSend = {
+        clerkId: user?.id,
+        name: profile.name,
+        university: profile.university,
+        topics: profile.topics,
+        imageUrl: user?.imageUrl,
+        career: profile.career
+      };
+  
+      console.log("Enviando datos al servidor:", dataToSend);
+  
       const response = await fetch("https://unimatch-backend-vy3b.onrender.com/api/profile/sync", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          clerkId: user?.id,
-          name: profile.name,
-          university: profile.university,
-          topics: profile.topics,
-          imageUrl: user?.imageUrl,
-          career: profile.career
-        }),
+        body: JSON.stringify(dataToSend),
       });
-
+  
+      const result = await response.json();
+  
       if (response.ok) {
+        // Guardar también en local para que el cambio sea instantáneo al recargar
         localStorage.setItem('unimatch_profile', JSON.stringify(profile));
         setIsEditing(false);
-        alert("✅ Sincronización Exitosa");
+        alert("✅ Datos guardados correctamente.");
       } else {
-        const err = await response.json();
-        alert(`❌ Error del Servidor: ${err.error}`);
+        alert(`❌ Error del servidor: ${result.error}`);
       }
-    } catch (e) {
-      alert("❌ Error de red: El servidor está fuera de línea.");
+    } catch (error) {
+      console.error("Error de conexión:", error);
+      alert("❌ No se pudo conectar con el servidor de Render. Revisa que esté encendido.");
     }
-  }
+  };
 
   if (!isLoaded) return null
 
