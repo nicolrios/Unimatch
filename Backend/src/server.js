@@ -1,31 +1,25 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const http = require('http');
 const neo4j = require('neo4j-driver');
 
 const app = express();
-const server = http.createServer(app);
 
-// Conexión con Neo4j AuraDB
+// Configuración de Neo4j
 const driver = neo4j.driver(
     process.env.NEO4J_URI,
     neo4j.auth.basic(process.env.NEO4J_USER, process.env.NEO4J_PASSWORD)
 );
 
-const allowedOrigins = [
-    "http://localhost:3000", 
-    "https://unimatch-red-pi.vercel.app"
-];
-
-app.use(cors({ origin: allowedOrigins, credentials: true }));
+// Middleware: CORS abierto para evitar el error de "Enlace de datos"
+app.use(cors()); 
 app.use(express.json());
 
-// --- SINCRONIZACIÓN DE PERFIL: CORREGIDO ---
+// --- RUTA: SINCRONIZACIÓN DE PERFIL ---
 app.post('/api/profile/sync', async (req, res) => {
     const { clerkId, name, university, topics, imageUrl, career } = req.body;
     
-    if (!clerkId) return res.status(400).json({ error: "Falta ID" });
+    if (!clerkId) return res.status(400).json({ error: "Falta clerkId" });
 
     const session = driver.session();
     try {
@@ -46,20 +40,21 @@ app.post('/api/profile/sync', async (req, res) => {
         `, { 
             clerkId, 
             name: name || "Estudiante", 
-            university: university || "No definida", 
+            university: university || "No especificada", 
             topics: topics || [], 
             imageUrl: imageUrl || "", 
             career: career || "General" 
         });
-        res.json({ success: true });
+        res.status(200).json({ success: true, message: "Perfil sincronizado en la red" });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error("Error en DB:", error);
+        res.status(500).json({ error: "Error interno del servidor" });
     } finally {
         await session.close();
     }
 });
 
-// Ruta de Dashboard para Matches
+// --- RUTA: DASHBOARD DE MATCHES ---
 app.get('/api/matches/dashboard/:clerkId', async (req, res) => {
     const { clerkId } = req.params;
     const session = driver.session();
@@ -85,5 +80,7 @@ app.get('/api/matches/dashboard/:clerkId', async (req, res) => {
     finally { await session.close(); }
 });
 
+app.get('/', (req, res) => res.send('UniMatch API Online 🚀'));
+
 const PORT = process.env.PORT || 10000;
-server.listen(PORT, () => console.log(`🚀 Servidor en puerto ${PORT}`));
+app.listen(PORT, () => console.log(`Servidor corriendo en puerto ${PORT}`));
