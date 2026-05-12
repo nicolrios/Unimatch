@@ -72,7 +72,7 @@ export default function FuturisticProfile() {
       <div className="flex justify-between items-end border-b border-white/5 pb-8 relative z-10">
         <div>
           <div className="flex items-center gap-2 text-blue-400 font-black text-[10px] uppercase tracking-[0.3em] mb-2">
-            <Zap className="w-3 h-3 fill-blue-400" /> STATUS: NODE_ACTIVE
+            <Zap className="w-3 h-3 fill-blue-400" /> Estudiante Activo
           </div>
           <h1 className="text-6xl font-black tracking-tighter text-white">
             MI <span className="bg-gradient-to-r from-blue-400 to-indigo-500 bg-clip-text text-transparent italic">PERFIL</span>
@@ -84,7 +84,7 @@ export default function FuturisticProfile() {
             isEditing ? "bg-indigo-600 shadow-[0_0_20px_rgba(79,70,229,0.4)]" : "bg-white text-black hover:bg-blue-600 hover:text-white shadow-xl"
           }`}
         >
-          {isEditing ? <><Save className="w-4 h-4 mr-2" /> Guardar Cambios</> : <><Edit2 className="w-4 h-4 mr-2" /> Editar Acceso</>}
+          {isEditing ? <><Save className="w-4 h-4 mr-2" /> Guardar Cambios</> : <><Edit2 className="w-4 h-4 mr-2" /> Editar</>}
         </Button>
       </div>
 
@@ -122,7 +122,7 @@ export default function FuturisticProfile() {
                 </div>
               </div>
               <div className="space-y-2 pt-6 border-t border-white/5">
-                <Label className="text-[10px] font-black uppercase text-blue-400/60">Bio de Usuario</Label>
+                <Label className="text-[10px] font-black uppercase text-blue-400/60">Bio del Estudiante</Label>
                 {isEditing ? <Textarea value={profile.bio} onChange={e => setProfile({...profile, bio: e.target.value})} className="bg-white/5 border-white/10 min-h-[100px]" /> : <p className="text-gray-400 text-sm italic font-medium leading-relaxed">"{profile.bio}"</p>}
               </div>
             </CardContent>
@@ -131,7 +131,7 @@ export default function FuturisticProfile() {
           {/* NODOS */}
           <Card className="bg-[#05070a]/60 border-white/5 backdrop-blur-3xl rounded-[2rem]">
             <CardContent className="p-8 space-y-4">
-              <Label className="text-[10px] font-black uppercase text-gray-500 flex items-center gap-2"><BookOpen className="w-4 h-4 text-blue-500" /> Nodos de Conocimiento</Label>
+              <Label className="text-[10px] font-black uppercase text-gray-500 flex items-center gap-2"><BookOpen className="w-4 h-4 text-blue-500" /> Temas de interés</Label>
               <div className="flex flex-wrap gap-2">
                 {profile.topics.map(t => (
                   <Badge key={t} className="bg-blue-600/10 text-blue-300 border border-blue-500/20 px-3 py-1 rounded-lg text-[10px] font-bold">
