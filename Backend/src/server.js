@@ -5,25 +5,21 @@ const neo4j = require('neo4j-driver');
 
 const app = express();
 
-// Configuración de Neo4j
+// Driver de Neo4j
 const driver = neo4j.driver(
     process.env.NEO4J_URI,
     neo4j.auth.basic(process.env.NEO4J_USER, process.env.NEO4J_PASSWORD)
 );
 
-// MIDDLEWARE: CORREGIDO PARA EVITAR BLOQUEOS
-app.use(cors({
-    origin: "*",
-    methods: ["GET", "POST"],
-    allowedHeaders: ["Content-Type"]
-}));
+// CORS ABIERTO PARA EVITAR ERRORES DE RED
+app.use(cors({ origin: "*" }));
 app.use(express.json());
 
-// --- RUTA DE SINCRONIZACIÓN CORREGIDA ---
+// RUTA DE SINCRONIZACIÓN
 app.post('/api/profile/sync', async (req, res) => {
     const { clerkId, name, university, topics, imageUrl, career } = req.body;
     
-    if (!clerkId) return res.status(400).json({ error: "clerkId es requerido" });
+    if (!clerkId) return res.status(400).json({ error: "Falta el ID de usuario" });
 
     const session = driver.session();
     try {
@@ -44,23 +40,23 @@ app.post('/api/profile/sync', async (req, res) => {
             RETURN u
         `, { 
             clerkId, 
-            name: name || "Usuario", 
+            name: name || "Sin nombre", 
             university: university || "", 
             topics: topics || [], 
             imageUrl: imageUrl || "", 
             career: career || "" 
         });
         
-        res.status(200).json({ success: true });
+        res.status(200).json({ success: true, message: "Nodo sincronizado" });
     } catch (error) {
-        console.error("Error Neo4j:", error);
+        console.error("Error en base de datos:", error);
         res.status(500).json({ error: error.message });
     } finally {
         await session.close();
     }
 });
 
-app.get('/', (req, res) => res.send('UniMatch API Sincronizada 🚀'));
+app.get('/', (req, res) => res.send('UniMatch API Online 🚀'));
 
-const PORT = 10000;
-app.listen(PORT, () => console.log(`Servidor activo en puerto ${PORT}`));
+const PORT = process.env.PORT || 10000;
+app.listen(PORT, () => console.log(`Servidor en puerto ${PORT}`));
