@@ -13,6 +13,7 @@ const driver = neo4j.driver(
     neo4j.auth.basic(process.env.NEO4J_USER, process.env.NEO4J_PASSWORD)
 );
 
+// Configuración de CORS - Asegúrate de que coincida con tu URL de Vercel
 const allowedOrigins = [
     "http://localhost:3000", 
     "https://unimatch-red-pi.vercel.app"
@@ -24,7 +25,7 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// RUTA 1: Sincronizar Perfil (Guarda tus temas en el grafo)
+// RUTA: Sincronizar Perfil
 app.post('/api/profile/sync', async (req, res) => {
     const { clerkId, name, university, topics, imageUrl } = req.body;
     if (!clerkId) return res.status(400).json({ error: "Falta clerkId" });
@@ -51,7 +52,7 @@ app.post('/api/profile/sync', async (req, res) => {
     }
 });
 
-// RUTA 2: Sugerencias de Matches (Busca usuarios reales con temas comunes)
+// RUTA: Sugerencias de Matches
 app.get('/api/matches/suggestions/:clerkId', async (req, res) => {
     const { clerkId } = req.params;
     const session = driver.session();
@@ -64,14 +65,40 @@ app.get('/api/matches/suggestions/:clerkId', async (req, res) => {
             ORDER BY size(commonTopics) DESC LIMIT 10
         `, { clerkId });
 
-        const suggestions = result.records.map(record => ({
-            id: record.get('id'),
-            name: record.get('name'),
-            university: record.get('university'),
-            imageUrl: record.get('imageUrl'),
-            commonTopics: record.get('commonTopics')
-        }));
-        res.json(suggestions);
+        res.json(result.records.map(r => ({
+            id: r.get('id'),
+            name: r.get('name'),
+            university: r.get('university'),
+            imageUrl: r.get('imageUrl'),
+            commonTopics: r.get('commonTopics')
+        })));
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    } finally {
+        await session.close();
+    }
+});
+
+// RUTA: Búsqueda por materia
+app.get('/api/matches/search', async (req, res) => {
+    const { q, clerkId } = req.query;
+    const session = driver.session();
+    try {
+        const result = await session.run(`
+            MATCH (u:Usuario)-[:INTERESADO_EN]->(t:Tema)
+            WHERE t.nombre =~ '(?i).*' + $query + '.*' AND u.id <> $clerkId
+            RETURN DISTINCT u.id AS id, u.name AS name, u.university AS university, 
+                            u.imageUrl AS imageUrl, collect(t.nombre) AS topics
+            LIMIT 20
+        `, { query: q, clerkId: clerkId });
+
+        res.json(result.records.map(r => ({
+            id: r.get('id'),
+            name: r.get('name'),
+            university: r.get('university'),
+            imageUrl: r.get('imageUrl'),
+            commonTopics: r.get('topics')
+        })));
     } catch (error) {
         res.status(500).json({ error: error.message });
     } finally {
@@ -81,5 +108,6 @@ app.get('/api/matches/suggestions/:clerkId', async (req, res) => {
 
 app.get('/', (req, res) => res.send('🚀 UniMatch Backend Ready'));
 
-const PORT = process.env.PORT || 8000; 
-server.listen(PORT, () => console.log(`Servidor en puerto ${PORT}`));
+// Render usa el puerto 10000 por defecto
+const PORT = process.env.PORT || 10000;
+server.listen(PORT, () => console.log(`Servidor corriendo en puerto ${PORT}`));
