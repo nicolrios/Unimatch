@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react"
 import { useUser } from "@clerk/nextjs"
-import { User, Building, Edit2, Plus, X, Save, GraduationCap } from "lucide-react"
+// Se agregó BookOpen a las importaciones de lucide-react
+import { User, Building, Edit2, Plus, X, Save, GraduationCap, BookOpen } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -10,12 +11,21 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 
+// Definimos la estructura del perfil para TypeScript
+interface UserProfile {
+  name: string;
+  university: string;
+  career: string;
+  bio: string;
+  topics: string[];
+}
+
 export default function ProfilePage() {
   const { isLoaded, isSignedIn, user } = useUser();
   const [isEditing, setIsEditing] = useState(false)
   const [newTopic, setNewTopic] = useState("")
 
-  const [profile, setProfile] = useState(() => {
+  const [profile, setProfile] = useState<UserProfile>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('unimatch_profile');
       return saved ? JSON.parse(saved) : {
@@ -26,12 +36,14 @@ export default function ProfilePage() {
         topics: ["Programación", "Cálculo"],
       };
     }
+    return { name: "", university: "", career: "", bio: "", topics: [] };
   });
 
   useEffect(() => {
+    // Se añade el tipo 'UserProfile' a prev para corregir el error de la línea 34
     if (isLoaded && isSignedIn && user && !profile.name) {
       const initialName = user.firstName ? `${user.firstName} ${user.lastName || ""}` : user.username || "Usuario";
-      setProfile(prev => ({ ...prev, name: initialName }));
+      setProfile((prev: UserProfile) => ({ ...prev, name: initialName }));
     }
   }, [isLoaded, isSignedIn, user]);
 
