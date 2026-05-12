@@ -16,77 +16,62 @@ const allowedOrigins = ["http://localhost:3000", "https://unimatch-red-pi.vercel
 app.use(cors({ origin: allowedOrigins, credentials: true }));
 app.use(express.json());
 
-// --- SINCRONIZACIÓN: Guarda usuario y crea relaciones con Temas ---
+// RUTA: Sincronizar Perfil
 app.post('/api/profile/sync', async (req, res) => {
     const { clerkId, name, university, topics, imageUrl, career } = req.body;
-    if (!clerkId) return res.status(400).json({ error: "Falta clerkId" });
-
     const session = driver.session();
     try {
         await session.run(`
             MERGE (u:Usuario {id: $clerkId})
             SET u.name = $name, u.university = $university, u.imageUrl = $imageUrl, u.career = $career
             WITH u
-            OPTIONAL MATCH (u)-[r:INTERESADO_EN]->(:Tema)
-            DELETE r
+            OPTIONAL MATCH (u)-[r:INTERESADO_EN]->(:Tema) DELETE r
             WITH u
             UNWIND $topics AS temaNombre
             MERGE (t:Tema {nombre: temaNombre})
             MERGE (u)-[:INTERESADO_EN]->(t)
-            RETURN u
         `, { clerkId, name, university, topics, imageUrl, career: career || "" });
         res.json({ success: true });
-    } catch (error) { res.status(500).json({ error: error.message }); }
+    } catch (e) { res.status(500).json({ error: e.message }); }
     finally { await session.close(); }
 });
 
-// --- SUGERENCIAS: Busca personas con temas IGUALES (ej: UML) ---
-app.get('/api/matches/suggestions/:clerkId', async (req, res) => {
+// RUTA: Dashboard de Matches (Activos, Pendientes, Sugeridos)
+app.get('/api/matches/dashboard/:clerkId', async (req, res) => {
     const { clerkId } = req.params;
     const session = driver.session();
     try {
         const result = await session.run(`
-            MATCH (me:Usuario {id: $clerkId})-[:INTERESADO_EN]->(t:Tema)<-[:INTERESADO_EN]-(other:Usuario)
-            WHERE me <> other
-            WITH other, collect(t.nombre) AS temasEnComun, count(t) AS cantidad
-            RETURN other.id AS id, other.name AS name, other.university AS university, 
-                   other.career AS career, other.imageUrl AS imageUrl, temasEnComun
-            ORDER BY cantidad DESC LIMIT 10
+            MATCH (me:Usuario {id: $clerkId})
+            
+            // 1. Activos: Usuarios con los que ya hay conexión (CONECTADO_CON)
+            OPTIONAL MATCH (me)-[:CONECTADO_CON]-(activos:Usuario)
+            
+            // 2. Pendientes: Solicitudes que otros me enviaron a mí
+            OPTIONAL MATCH (pendientes:Usuario)-[r:SOLICITUD_ENVIADA]->(me)
+            WHERE r.estado = 'pendiente'
+            
+            // 3. Sugeridos: Gente con temas comunes que NO son amigos ni tienen solicitudes
+            OPTIONAL MATCH (me)-[:INTERESADO_EN]->(t:Tema)<-[:INTERESADO_EN]-(sug:Usuario)
+            WHERE sug.id <> $clerkId 
+              AND NOT (me)-[:CONECTADO_CON]-(sug) 
+              AND NOT (me)-[:SOLICITUD_ENVIADA]-(sug)
+
+            RETURN 
+                collect(DISTINCT {id: activos.id, name: activos.name, img: activos.imageUrl}) AS listaActivos,
+                collect(DISTINCT {id: pendientes.id, name: pendientes.name, img: pendientes.imageUrl}) AS listaPendientes,
+                collect(DISTINCT {id: sug.id, name: sug.name, img: sug.imageUrl, common: t.nombre}) AS listaSugeridos
         `, { clerkId });
 
-        res.json(result.records.map(r => ({
-            id: r.get('id'), name: r.get('name'), university: r.get('university'),
-            career: r.get('career'), imageUrl: r.get('imageUrl'), 
-            commonTopics: r.get('temasEnComun'),
-            matchPercentage: 50 + (r.get('temasEnComun').length * 10)
-        })));
-    } catch (error) { res.status(500).json({ error: error.message }); }
-    finally { await session.close(); }
-});
-
-// --- BÚSQUEDA: Filtra por texto o carrera ---
-app.get('/api/matches/search', async (req, res) => {
-    const { q, clerkId } = req.query;
-    const session = driver.session();
-    try {
-        const result = await session.run(`
-            MATCH (u:Usuario)
-            WHERE u.id <> $clerkId 
-            AND (u.name =~ '(?i).*' + $query + '.*' OR u.career =~ '(?i).*' + $query + '.*' OR $query = "")
-            OPTIONAL MATCH (u)-[:INTERESADO_EN]->(t:Tema)
-            RETURN u.id AS id, u.name AS name, u.university AS university, 
-                   u.career AS career, u.imageUrl AS imageUrl, collect(t.nombre) AS topics
-            LIMIT 20
-        `, { query: q || "", clerkId: clerkId || "" });
-
-        res.json(result.records.map(r => ({
-            id: r.get('id'), name: r.get('name'), university: r.get('university'),
-            career: r.get('career'), imageUrl: r.get('imageUrl'), commonTopics: r.get('topics'),
-            matchPercentage: 45
-        })));
-    } catch (error) { res.status(500).json({ error: error.message }); }
+        const rec = result.records[0];
+        res.json({
+            activos: rec.get('listaActivos').filter(x => x.id !== null),
+            pendientes: rec.get('listaPendientes').filter(x => x.id !== null),
+            sugeridos: rec.get('listaSugeridos').filter(x => x.id !== null)
+        });
+    } catch (e) { res.status(500).json({ error: e.message }); }
     finally { await session.close(); }
 });
 
 const PORT = process.env.PORT || 10000;
-server.listen(PORT, () => console.log(`Backend en puerto ${PORT}`));
+server.listen(PORT, () => console.log(`Servidor UniMatch en puerto ${PORT}`));
