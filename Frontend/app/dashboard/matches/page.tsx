@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { useUser } from "@clerk/nextjs"
 import { 
   Users, Clock, Sparkles, MessageCircle, 
-  Video, UserPlus, Bell, X, Check, Filter, Settings2
+  Video, UserPlus, Bell, X, Check, Filter, Settings2, GraduationCap
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -21,7 +21,7 @@ interface SimpleUser {
   match?: number;
 }
 
-export default function ModernMatchesDashboard() {
+export default function MatchesDashboard() {
   const { user, isLoaded } = useUser()
   const [data, setData] = useState({ activos: [], pendientes: [], sugeridos: [] })
   const [loading, setLoading] = useState(true)
@@ -46,72 +46,58 @@ export default function ModernMatchesDashboard() {
 
   return (
     <TooltipProvider>
-      <div className="p-4 md:p-8 max-w-[1600px] mx-auto space-y-10 bg-background min-h-screen text-foreground animate-in fade-in duration-1000">
+      <div className="p-4 md:p-8 max-w-[1600px] mx-auto space-y-10 animate-in fade-in duration-700">
         
-        {/* HEADER MODERNO */}
+        {/* HEADER ACTUALIZADO */}
         <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-white/5 pb-8">
           <div>
-            <h1 className="text-5xl font-black tracking-tighter bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-500 bg-clip-text text-transparent">
+            <h1 className="text-4xl font-black tracking-tight bg-gradient-to-r from-blue-400 via-indigo-500 to-purple-500 bg-clip-text text-transparent">
               Mis Matches
             </h1>
-            <p className="text-muted-foreground font-medium mt-1">Gestiona tus compañeros de estudio y solicitudes con IA.</p>
+            <p className="text-muted-foreground font-medium mt-1">Gestiona tus compañeros de estudio.</p>
           </div>
           
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" className="rounded-xl bg-secondary/20 hover:bg-secondary/40 h-11 w-11 border border-white/5">
-              <Filter className="w-5 h-5" />
-            </Button>
-            <Button variant="ghost" size="icon" className="rounded-xl bg-secondary/20 hover:bg-secondary/40 h-11 w-11 border border-white/5 relative">
-              <Bell className="w-5 h-5" />
+            <Button variant="ghost" size="icon" className="rounded-xl bg-secondary/10 hover:bg-secondary/20 border border-white/5">
+              <Bell className="w-5 h-5 text-muted-foreground" />
               {data.pendientes.length > 0 && (
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full border-4 border-background text-[10px] flex items-center justify-center font-bold animate-bounce">
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-indigo-600 rounded-full border-2 border-background text-[9px] flex items-center justify-center font-bold">
                   {data.pendientes.length}
                 </span>
               )}
-            </Button>
-            <Button variant="ghost" size="icon" className="rounded-xl bg-secondary/20 hover:bg-secondary/40 h-11 w-11 border border-white/5">
-              <Settings2 className="w-5 h-5" />
             </Button>
           </div>
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
-          {/* COLUMNA 1: MATCHES ACTIVOS (AZUL NEÓN) */}
+          {/* COLUMNA 1: MATCHES ACTIVOS (AZUL UNIMATCH) */}
           <section className="space-y-6">
-            <div className="flex items-center justify-between px-2">
-              <div className="flex items-center gap-3 text-blue-400 font-bold">
-                <div className="p-2 bg-blue-500/10 rounded-lg"><Users className="w-5 h-5" /></div>
-                <h2 className="tracking-widest uppercase text-xs">Matches Activos</h2>
-              </div>
-              <Badge variant="outline" className="border-blue-500/30 text-blue-400 bg-blue-500/5 px-3">{data.activos.length}</Badge>
+            <div className="flex items-center gap-3 text-blue-400 font-bold px-2">
+              <Users className="w-5 h-5" />
+              <h2 className="tracking-wider uppercase text-[11px]">Matches Activos</h2>
             </div>
 
             <div className="space-y-4">
               {data.activos.map((m: SimpleUser) => (
-                <Card key={m.id} className="group relative overflow-hidden bg-[#0a0c14] border-white/5 hover:border-blue-500/50 transition-all duration-500 hover:shadow-[0_0_30px_-10px_rgba(59,130,246,0.3)]">
-                  <CardContent className="p-6 flex items-center gap-5">
-                    <div className="relative">
-                      <div className="absolute inset-0 bg-blue-500 blur-md opacity-20 group-hover:opacity-40 transition-opacity rounded-full"></div>
-                      <Avatar className="h-16 w-16 rounded-2xl border-2 border-blue-500/20 relative">
-                        <AvatarImage src={m.img} className="object-cover" />
-                        <AvatarFallback>{m.name[0]}</AvatarFallback>
-                      </Avatar>
-                    </div>
-                    <div className="flex-1 space-y-1">
-                      <p className="font-bold text-lg leading-none">{m.name}</p>
-                      <p className="text-[11px] text-blue-400 font-bold uppercase tracking-tighter">En línea - 2 horas</p>
-                      <div className="flex gap-2 pt-2">
-                        <Tooltip><TooltipTrigger asChild>
-                          <Button size="icon" variant="secondary" className="h-9 w-9 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20">
-                            <MessageCircle className="w-4 h-4" />
-                          </Button>
-                        </TooltipTrigger><TooltipContent>Enviar Mensaje</TooltipContent></Tooltip>
-                        <Tooltip><TooltipTrigger asChild>
-                          <Button size="icon" variant="secondary" className="h-9 w-9 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5">
-                            <Video className="w-4 h-4" />
-                          </Button>
-                        </TooltipTrigger><TooltipContent>Videollamada</TooltipContent></Tooltip>
+                <Card key={m.id} className="bg-[#0f111a]/60 border-white/5 hover:border-blue-500/40 transition-all duration-300 group">
+                  <CardContent className="p-5 flex items-center gap-4">
+                    <Avatar className="h-14 w-14 rounded-2xl border border-blue-500/20">
+                      <AvatarImage src={m.img} className="object-cover" />
+                      <AvatarFallback className="bg-blue-500/10 text-blue-400">{m.name[0]}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 overflow-hidden">
+                      <p className="font-bold text-sm truncate">{m.name}</p>
+                      <p className="text-[10px] text-blue-400/80 font-semibold flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" /> Conectado
+                      </p>
+                      <div className="flex gap-2 mt-2">
+                        <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg bg-blue-500/5 hover:bg-blue-500/20 text-blue-400 border border-blue-500/10">
+                          <MessageCircle className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg bg-white/5 hover:bg-white/10 border border-white/5">
+                          <Video className="w-3.5 h-3.5" />
+                        </Button>
                       </div>
                     </div>
                   </CardContent>
@@ -120,31 +106,28 @@ export default function ModernMatchesDashboard() {
             </div>
           </section>
 
-          {/* COLUMNA 2: SOLICITUDES (DORADO) */}
+          {/* COLUMNA 2: SOLICITUDES (ÍNDIGO / VIOLETA) */}
           <section className="space-y-6">
-            <div className="flex items-center justify-between px-2">
-              <div className="flex items-center gap-3 text-amber-400 font-bold">
-                <div className="p-2 bg-amber-500/10 rounded-lg"><Clock className="w-5 h-5" /></div>
-                <h2 className="tracking-widest uppercase text-xs">Solicitudes</h2>
-              </div>
-              <Badge variant="outline" className="border-amber-500/30 text-amber-400 bg-amber-500/5 px-3">{data.pendientes.length}</Badge>
+            <div className="flex items-center gap-3 text-indigo-400 font-bold px-2">
+              <Clock className="w-5 h-5" />
+              <h2 className="tracking-wider uppercase text-[11px]">Solicitudes</h2>
             </div>
 
             <div className="space-y-4">
               {data.pendientes.map((m: SimpleUser) => (
-                <Card key={m.id} className="bg-[#0a0c14] border-amber-500/10 hover:border-amber-500/40 transition-all group shadow-2xl">
-                  <CardContent className="p-6 flex items-center gap-5">
-                    <Avatar className="h-16 w-16 rounded-2xl border-2 border-amber-500/10">
+                <Card key={m.id} className="bg-[#0f111a]/60 border-indigo-500/20 hover:border-indigo-500/40 transition-all">
+                  <CardContent className="p-5 flex items-center gap-4">
+                    <Avatar className="h-14 w-14 rounded-2xl border border-indigo-500/20">
                       <AvatarImage src={m.img} className="object-cover" />
                     </Avatar>
                     <div className="flex-1">
-                      <p className="font-bold text-lg">{m.name}</p>
+                      <p className="font-bold text-sm">{m.name}</p>
                       <div className="flex gap-2 mt-3">
-                        <Button className="flex-1 bg-amber-500 hover:bg-amber-600 text-black font-bold h-9 rounded-xl shadow-[0_0_15px_rgba(245,158,11,0.3)]">
+                        <Button className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-8 text-[11px] rounded-lg">
                           Aceptar
                         </Button>
-                        <Button variant="ghost" className="h-9 w-9 p-0 rounded-xl bg-red-500/5 hover:bg-red-500/20 text-red-400 border border-red-500/10">
-                          <X className="w-4 h-4" />
+                        <Button variant="ghost" className="h-8 w-8 p-0 rounded-lg bg-red-500/5 hover:bg-red-500/20 text-red-400 border border-red-500/10">
+                          <X className="w-3.5 h-3.5" />
                         </Button>
                       </div>
                     </div>
@@ -154,49 +137,34 @@ export default function ModernMatchesDashboard() {
             </div>
           </section>
 
-          {/* COLUMNA 3: SUGERENCIAS (PÚRPURA/AI) */}
+          {/* COLUMNA 3: SUGERENCIAS (GRADIENTE PURPLE/BLUE) */}
           <section className="space-y-6">
-            <div className="flex items-center justify-between px-2">
-              <div className="flex items-center gap-3 text-purple-400 font-bold">
-                <div className="p-2 bg-purple-500/10 rounded-lg"><Sparkles className="w-5 h-5" /></div>
-                <h2 className="tracking-widest uppercase text-xs">Sugerencias AI</h2>
-              </div>
-              <Badge variant="outline" className="border-purple-500/30 text-purple-400 bg-purple-500/5 px-3">{data.sugeridos.length}</Badge>
+            <div className="flex items-center gap-3 text-purple-400 font-bold px-2">
+              <Sparkles className="w-5 h-5" />
+              <h2 className="tracking-wider uppercase text-[11px]">Sugerencias</h2>
             </div>
 
             <div className="space-y-4">
               {data.sugeridos.map((m: any) => (
-                <Card key={m.id} className="relative bg-[#0a0c14] border-purple-500/10 hover:border-purple-500/40 transition-all overflow-hidden group">
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/10 blur-3xl -mr-10 -mt-10"></div>
-                  <CardContent className="p-6">
+                <Card key={m.id} className="bg-[#0f111a]/60 border-purple-500/10 hover:border-purple-500/30 transition-all group overflow-hidden">
+                  <CardContent className="p-5">
                     <div className="flex gap-4">
-                      <div className="relative h-14 w-14">
-                        <div className="absolute inset-0 border-2 border-purple-500 rounded-full animate-[spin_4s_linear_infinite] border-t-transparent border-l-transparent opacity-40"></div>
-                        <Avatar className="h-14 w-14 rounded-full p-1 border border-white/5">
-                          <AvatarImage src={m.img} className="rounded-full object-cover" />
-                        </Avatar>
-                        <div className="absolute -bottom-1 -right-1 bg-[#0a0c14] border border-purple-500/30 rounded-full p-1 shadow-lg">
-                          <div className="text-[8px] font-black text-purple-400">88%</div>
-                        </div>
-                      </div>
+                      <Avatar className="h-12 w-12 rounded-full border border-purple-500/30 p-0.5">
+                        <AvatarImage src={m.img} className="rounded-full object-cover" />
+                      </Avatar>
                       <div className="flex-1">
-                        <h3 className="font-bold text-md leading-tight">{m.name}</h3>
-                        <p className="text-[10px] text-muted-foreground font-bold flex items-center gap-1 mt-1">
-                          Ingeniería en Sistemas
+                        <h3 className="font-bold text-sm">{m.name}</h3>
+                        <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                          <GraduationCap className="w-3 h-3" /> Ingeniería
                         </p>
-                        <div className="flex flex-wrap gap-1 mt-2">
-                          <Badge variant="secondary" className="text-[8px] bg-purple-500/10 text-purple-200 border-none px-2 py-0">#{m.common || 'UML'}</Badge>
+                        <div className="mt-2">
+                          <Badge className="text-[9px] bg-purple-500/10 text-purple-300 border-none px-2 font-medium">#{m.common || 'Estudio'}</Badge>
                         </div>
                       </div>
                     </div>
-                    <div className="flex gap-2 mt-5">
-                      <Button className="flex-1 h-9 rounded-xl bg-purple-600 hover:bg-purple-700 text-xs font-bold transition-all shadow-[0_0_15px_rgba(147,51,234,0.3)]">
-                        Conectar
-                      </Button>
-                      <Button variant="ghost" className="flex-1 h-9 rounded-xl text-[10px] text-muted-foreground hover:text-white">
-                        Saber más
-                      </Button>
-                    </div>
+                    <Button className="w-full mt-4 h-8 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-[11px] font-bold rounded-lg transition-all shadow-lg shadow-purple-900/20">
+                      Conectar
+                    </Button>
                   </CardContent>
                 </Card>
               ))}
