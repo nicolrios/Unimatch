@@ -7,32 +7,27 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Configuración de conexión ultra-robusta
+// EL FIX: Solo pasamos URI, Usuario y Contraseña. 
+// La URL neo4j+s:// ya maneja el cifrado automáticamente.
 const driver = neo4j.driver(
     process.env.NEO4J_URI,
-    neo4j.auth.basic(process.env.NEO4J_USER, process.env.NEO4J_PASSWORD),
-    {
-        encrypted: 'ENCRYPTION_ON',
-        trust: 'TRUST_SYSTEM_CA_SIGNED_CERTIFICATES',
-        maxConnectionLifetime: 3 * 60 * 1000, // 3 minutos
-        connectionTimeout: 30000 // 30 segundos de espera
-    }
+    neo4j.auth.basic(process.env.NEO4J_USER, process.env.NEO4J_PASSWORD)
 );
 
-// Verificar la conexión en el arranque
-const checkConnection = async () => {
+// Verificar conexión al arrancar
+const initDB = async () => {
     try {
         await driver.verifyConnectivity();
-        console.log("✅ Conectado a Neo4j Aura satisfactoriamente");
+        console.log("✅ Conexión establecida con Neo4j Aura");
     } catch (error) {
-        console.error("❌ Error de conexión inicial:", error.message);
+        console.error("❌ Error de conexión:", error.message);
     }
 };
-checkConnection();
+initDB();
 
 app.post('/api/profile/sync', async (req, res) => {
     const { clerkId, name, university, topics, imageUrl, career } = req.body;
-    const session = driver.session({ database: 'neo4j' });
+    const session = driver.session();
     
     try {
         await session.executeWrite(tx => 
@@ -54,12 +49,12 @@ app.post('/api/profile/sync', async (req, res) => {
         );
         res.status(200).json({ success: true });
     } catch (error) {
-        console.error("Error en Sync:", error.message);
-        res.status(500).json({ error: "La base de datos está ocupada o iniciando. Reintenta ahora." });
+        console.error("Error en operación:", error.message);
+        res.status(500).json({ error: error.message });
     } finally {
         await session.close();
     }
 });
 
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log(`🚀 Puerto ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Servidor en puerto ${PORT}`));
