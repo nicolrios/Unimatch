@@ -138,7 +138,7 @@ export default function FuturisticProfile() {
         <Card className="lg:col-span-2 bg-[#05070a]/60 border-white/5 backdrop-blur-xl rounded-[2rem]">
           <CardHeader>
             <CardTitle className="text-sm font-black uppercase tracking-[0.2em] flex items-center gap-3 text-gray-400">
-              <Cpu className="w-5 h-5 text-blue-500" /> Protocolo de Información
+              <Cpu className="w-5 h-5 text-blue-500" />Información del estudiante
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-8">
@@ -176,7 +176,7 @@ export default function FuturisticProfile() {
           <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/5 blur-3xl -mr-10 -mt-10" />
           <CardHeader>
             <CardTitle className="text-sm font-black uppercase tracking-[0.2em] flex items-center gap-3 text-gray-400">
-              <BookOpen className="w-5 h-5 text-blue-500" /> Nodos de Interés
+              <BookOpen className="w-5 h-5 text-blue-500" />Temas de interés
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6 relative z-10">
