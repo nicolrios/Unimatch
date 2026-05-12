@@ -144,7 +144,7 @@ export default function HyperFuturisticProfile() {
           <Card className="bg-[#0a0c14]/60 border-white/5 backdrop-blur-3xl rounded-[2rem] hover:border-blue-500/20 transition-all duration-700">
             <CardHeader className="border-b border-white/5 pb-4">
               <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-gray-500 flex items-center gap-3">
-                <GraduationCap className="w-5 h-5 text-blue-500" /> Información de Acceso
+                <GraduationCap className="w-5 h-5 text-blue-500" /> Información del estudiante
               </CardTitle>
             </CardHeader>
             <CardContent className="p-8 space-y-8">
@@ -185,7 +185,7 @@ export default function HyperFuturisticProfile() {
           <Card className="bg-[#0a0c14]/60 border-white/5 backdrop-blur-3xl rounded-[2rem] group hover:border-indigo-500/20 transition-all duration-700">
             <CardHeader className="border-b border-white/5 pb-4">
               <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-gray-500 flex items-center gap-3">
-                <BookOpen className="w-5 h-5 text-indigo-500" /> Nodos de Conocimiento
+                <BookOpen className="w-5 h-5 text-indigo-500" /> Temas de interés
               </CardTitle>
             </CardHeader>
             <CardContent className="p-8 space-y-6">
