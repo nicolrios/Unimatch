@@ -5,58 +5,58 @@ const neo4j = require('neo4j-driver');
 
 const app = express();
 
-// Driver de Neo4j
+// Configuración del Driver con KeepAlive
 const driver = neo4j.driver(
     process.env.NEO4J_URI,
-    neo4j.auth.basic(process.env.NEO4J_USER, process.env.NEO4J_PASSWORD)
+    neo4j.auth.basic(process.env.NEO4J_USER, process.env.NEO4J_PASSWORD),
+    { maxConnectionLifetime: 3 * 60 * 60 * 1000 } // 3 horas
 );
 
-// CORS ABIERTO PARA EVITAR ERRORES DE RED
-app.use(cors({ origin: "*" }));
+app.use(cors());
 app.use(express.json());
 
-// RUTA DE SINCRONIZACIÓN
 app.post('/api/profile/sync', async (req, res) => {
     const { clerkId, name, university, topics, imageUrl, career } = req.body;
     
-    if (!clerkId) return res.status(400).json({ error: "Falta el ID de usuario" });
+    if (!clerkId) return res.status(400).json({ error: "Falta ID" });
 
-    const session = driver.session();
+    // Creamos la sesión justo antes de usarla
+    const session = driver.session({ database: 'neo4j' }); 
+    
     try {
-        await session.run(`
-            MERGE (u:Usuario {id: $clerkId})
-            SET u.name = $name, 
-                u.university = $university, 
-                u.imageUrl = $imageUrl, 
-                u.career = $career
-            WITH u
-            OPTIONAL MATCH (u)-[r:INTERESADO_EN]->(:Tema)
-            DELETE r
-            WITH u
-            UNWIND (CASE WHEN $topics = [] THEN [null] ELSE $topics END) AS temaNombre
-            WITH u, temaNombre WHERE temaNombre IS NOT NULL
-            MERGE (t:Tema {nombre: temaNombre})
-            MERGE (u)-[:INTERESADO_EN]->(t)
-            RETURN u
-        `, { 
-            clerkId, 
-            name: name || "Sin nombre", 
-            university: university || "", 
-            topics: topics || [], 
-            imageUrl: imageUrl || "", 
-            career: career || "" 
-        });
-        
-        res.status(200).json({ success: true, message: "Nodo sincronizado" });
+        await session.writeTransaction(tx => 
+            tx.run(`
+                MERGE (u:Usuario {id: $clerkId})
+                SET u.name = $name, 
+                    u.university = $university, 
+                    u.imageUrl = $imageUrl, 
+                    u.career = $career
+                WITH u
+                OPTIONAL MATCH (u)-[r:INTERESADO_EN]->(:Tema)
+                DELETE r
+                WITH u
+                UNWIND (CASE WHEN $topics = [] THEN [null] ELSE $topics END) AS temaNombre
+                WITH u, temaNombre WHERE temaNombre IS NOT NULL
+                MERGE (t:Tema {nombre: temaNombre})
+                MERGE (u)-[:INTERESADO_EN]->(t)
+                RETURN u
+            `, { 
+                clerkId, 
+                name: name || "", 
+                university: university || "", 
+                topics: topics || [], 
+                imageUrl: imageUrl || "", 
+                career: career || "" 
+            })
+        );
+        res.status(200).json({ success: true });
     } catch (error) {
-        console.error("Error en base de datos:", error);
-        res.status(500).json({ error: error.message });
+        console.error("Error de Neo4j detectado:", error.message);
+        res.status(500).json({ error: "La base de datos está despertando, intenta de nuevo en 10 segundos." });
     } finally {
         await session.close();
     }
 });
 
-app.get('/', (req, res) => res.send('UniMatch API Online 🚀'));
-
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log(`Servidor en puerto ${PORT}`));
+app.listen(PORT, () => console.log(`Servidor activo en puerto ${PORT}`));
