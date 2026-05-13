@@ -4,85 +4,90 @@ const cors = require('cors');
 const neo4j = require('neo4j-driver');
 
 const app = express();
-
-// Configuración de CORS abierta para evitar bloqueos del navegador
 app.use(cors());
 app.use(express.json());
 
-// Configuración del Driver de Neo4j
-// Nota: La URI en Render debe ser bolt+s:// o neo4j+s://
+// Configuración del Driver (Usa bolt+s:// en Render para mayor estabilidad)
 const driver = neo4j.driver(
     process.env.NEO4J_URI,
     neo4j.auth.basic(process.env.NEO4J_USER, process.env.NEO4J_PASSWORD),
-    {
-        disableLosslessIntegers: true // Mejora la compatibilidad de números con JS
-    }
+    { disableLosslessIntegers: true }
 );
 
-// Verificar conexión al iniciar (verás esto en los Logs de Render)
-const verificarConexion = async () => {
+// Verificar conexión inicial
+(async () => {
     try {
         await driver.verifyConnectivity();
         console.log("✅ Conexión establecida con Neo4j Aura satisfactoriamente");
     } catch (error) {
         console.error("❌ Error de conexión inicial:", error.message);
     }
-};
-verificarConexion();
+})();
 
-// --- RUTA PRINCIPAL DE SINCRONIZACIÓN ---
+// --- RUTAS ---
+
+// 1. Sincronización de Perfil
 app.post('/api/profile/sync', async (req, res) => {
     const { clerkId, name, university, topics, imageUrl, career } = req.body;
-    
-    if (!clerkId) {
-        return res.status(400).json({ error: "clerkId es requerido" });
-    }
-
+    if (!clerkId) return res.status(400).json({ error: "clerkId requerido" });
     const session = driver.session();
-    
     try {
-        console.log("🚀 Iniciando escritura para el usuario:", clerkId);
-
-        // Ejecución directa de la consulta Cypher
         await session.run(`
             MERGE (u:Usuario {id: $clerkId})
-            SET u.name = $name, 
-                u.university = $university, 
-                u.imageUrl = $imageUrl, 
-                u.career = $career
+            SET u.name = $name, u.university = $university, u.imageUrl = $imageUrl, u.career = $career
             WITH u
-            OPTIONAL MATCH (u)-[r:INTERESADO_EN]->(:Tema)
-            DELETE r
+            OPTIONAL MATCH (u)-[r:INTERESADO_EN]->(:Tema) DELETE r
             WITH u
             UNWIND (CASE WHEN $topics = [] THEN [null] ELSE $topics END) AS temaNombre
             WITH u, temaNombre WHERE temaNombre IS NOT NULL
             MERGE (t:Tema {nombre: temaNombre})
             MERGE (u)-[:INTERESADO_EN]->(t)
             RETURN u
-        `, { 
-            clerkId, 
-            name: name || "Estudiante", 
-            university: university || "", 
-            topics: topics || [], 
-            imageUrl: imageUrl || "", 
-            career: career || "" 
-        });
-
-        console.log("✅ Sincronización exitosa en la base de datos");
+        `, { clerkId, name, university, topics: topics || [], imageUrl, career });
         res.status(200).json({ success: true });
-
     } catch (error) {
-        console.error("❌ Fallo crítico en Neo4j:", error.message);
         res.status(500).json({ error: error.message });
-    } finally {
-        await session.close(); // Siempre cerramos la sesión
-    }
+    } finally { await session.close(); }
 });
 
-// Ruta de prueba para saber si el servidor responde
-app.get('/', (req, res) => res.send('UniMatch API - Online 🚀'));
+// 2. Motor de Sugerencias (Matches por Intereses)
+app.get('/api/matches/suggestions/:clerkId', async (req, res) => {
+    const { clerkId } = req.params;
+    const session = driver.session();
+    try {
+        const result = await session.run(`
+            MATCH (u:Usuario {id: $clerkId})-[:INTERESADO_EN]->(t:Tema)<-[:INTERESADO_EN]-(sugerencia:Usuario)
+            WHERE u <> sugerencia
+            RETURN sugerencia, count(t) AS temasEnComun, collect(t.nombre) AS temasNombres
+            ORDER BY temasEnComun DESC LIMIT 6
+        `, { clerkId });
+        const suggestions = result.records.map(record => ({
+            ...record.get('sugerencia').properties,
+            commonTopicsCount: record.get('temasEnComun'),
+            commonTopics: record.get('temasNombres')
+        }));
+        res.status(200).json(suggestions);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    } finally { await session.close(); }
+});
+
+// 3. Búsqueda Global (Nombre o Carrera)
+app.get('/api/users/search', async (req, res) => {
+    const { q } = req.query;
+    const session = driver.session();
+    try {
+        const result = await session.run(`
+            MATCH (u:Usuario)
+            WHERE toLower(u.name) CONTAINS toLower($q) OR toLower(u.career) CONTAINS toLower($q)
+            RETURN u LIMIT 12
+        `, { q: q || "" });
+        const users = result.records.map(record => record.get('u').properties);
+        res.status(200).json(users);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    } finally { await session.close(); }
+});
 
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => {
-    console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
-});
+app.listen(PORT, () => console.log(`🚀 Servidor en puerto ${PORT}`));
