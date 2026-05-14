@@ -37,42 +37,58 @@ app.post('/api/profile/sync', async (req, res) => {
     finally { await session.close(); }
 });
 
-// 2. Panel de Matches (Sugerencias, Solicitudes y Confirmados)
+// --- RUTA DE PANEL DE MATCHES COMPLETA ---
 app.get('/api/matches/panel/:clerkId', async (req, res) => {
     const { clerkId } = req.params;
     const session = driver.session();
+
     try {
-        // Sugerencias Inteligentes
-        const suggRes = await session.run(`
+        // 1. Sugerencias: Buscamos gente que NO tenga relación previa.
+        // Priorizamos temas en común, si no hay, mostramos gente de la misma carrera.
+        const suggestionsQuery = `
             MATCH (u:Usuario {id: $clerkId})
             MATCH (sugerencia:Usuario)
-            WHERE u <> sugerencia AND NOT (u)-[:SOLICITUD]-(sugerencia)
+            WHERE u <> sugerencia 
+            AND NOT (u)-[:SOLICITUD]-(sugerencia)
             OPTIONAL MATCH (u)-[:INTERESADO_EN]->(t:Tema)<-[:INTERESADO_EN]-(sugerencia)
             WITH sugerencia, count(t) AS temasEnComun, collect(t.nombre) AS temasNombres, u
             RETURN sugerencia, temasEnComun, temasNombres
-            ORDER BY temasEnComun DESC LIMIT 6
-        `, { clerkId });
+            ORDER BY temasEnComun DESC, 
+                     (CASE WHEN sugerencia.career = u.career THEN 1 ELSE 0 END) DESC
+            LIMIT 6
+        `;
 
-        // Solicitudes Recibidas
-        const reqRes = await session.run(`
+        // 2. Solicitudes Recibidas (Pendientes)
+        const requestsQuery = `
             MATCH (remitente:Usuario)-[r:SOLICITUD {status: 'pendiente'}]->(u:Usuario {id: $clerkId})
             RETURN remitente
-        `, { clerkId });
+        `;
 
-        // Matches Confirmados
-        const confirmedRes = await session.run(`
+        // 3. Matches Activos (Confirmados)
+        const activeQuery = `
             MATCH (u:Usuario {id: $clerkId})-[r:SOLICITUD {status: 'aceptado'}]-(m:Usuario)
             RETURN m
-        `, { clerkId });
+        `;
+
+        const [suggRes, reqRes, activeRes] = await Promise.all([
+            session.run(suggestionsQuery, { clerkId }),
+            session.run(requestsQuery, { clerkId }),
+            session.run(activeQuery, { clerkId })
+        ]);
 
         res.json({
-            suggestions: suggRes.records.map(r => ({ ...r.get('sugerencia').properties, commonTopics: r.get('temasNombres') })),
+            suggestions: suggRes.records.map(r => ({
+                ...r.get('sugerencia').properties,
+                commonTopics: r.get('temasNombres')
+            })),
             requests: reqRes.records.map(r => r.get('remitente').properties),
-            confirmed: confirmedRes.records.map(r => r.get('m').properties)
+            active: activeRes.records.map(r => r.get('m').properties)
         });
-    } catch (error) { res.status(500).json({ error: error.message }); }
-    finally { await session.close(); }
-});
 
-const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log(`🚀 Servidor en puerto ${PORT}`));
+    } catch (error) {
+        console.error("Error en panel:", error);
+        res.status(500).json({ error: error.message });
+    } finally {
+        await session.close();
+    }
+});
