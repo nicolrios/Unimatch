@@ -36,7 +36,7 @@ export default function SearchPage() {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-pink-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-pink-500"></span>
             </span>
-            <p className="text-[10px] tracking-[0.4em] text-gray-400 font-black uppercase">Localizador de Nodos</p>
+            <p className="text-[10px] tracking-[0.4em] text-gray-400 font-black uppercase">Localizador de compañeros</p>
           </div>
           <h1 className="text-6xl font-black italic tracking-tighter leading-tight mb-4">
             Explorar <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 via-violet-500 to-blue-400">Red</span>
