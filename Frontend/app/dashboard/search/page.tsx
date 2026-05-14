@@ -97,7 +97,7 @@ export default function SearchPage() {
                     </div>
 
                     <button className="w-full py-4 bg-white/5 hover:bg-gradient-to-r hover:from-pink-600 hover:to-blue-600 border border-white/10 rounded-2xl font-black text-[9px] tracking-[0.2em] uppercase transition-all duration-500">
-                      Ver Perfil de Nodo
+                      Ver Perfil 
                     </button>
                   </div>
                 </div>
