@@ -164,3 +164,29 @@
 .glow-accent {
   box-shadow: 0 0 40px oklch(0.7 0.15 200 / 0.3);
 }
+/* EFECTOS CYBER-NEON PARA UNIMATCH */
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Scrollbar personalizada para que no rompa la estética futurista */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, #ec4899, #3b82f6);
+  border-radius: 10px;
+}
+
+/* Efecto de resplandor para elementos seleccionados */
+.neon-glow {
+  box-shadow: 0 0 15px rgba(236, 72, 153, 0.2), 0 0 5px rgba(59, 130, 246, 0.2);
+}
