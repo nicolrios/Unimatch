@@ -5,67 +5,38 @@ import { useState } from "react"
 export default function ProfilePage() {
   const { user } = useUser()
   const [saving, setSaving] = useState(false)
-  const [formData, setFormData] = useState({
-    university: "",
-    career: "",
-    topics: "" // Manejaremos esto como string separado por comas
-  })
-
-  const handleSave = async () => {
-    if (!user) return
-    setSaving(true)
-    
-    // Convertimos el string de temas a un array limpio
-    const topicsArray = formData.topics.split(",").map(t => t.trim()).filter(t => t !== "")
-
-    try {
-      const res = await fetch("https://unimatch-backend-vy3b.onrender.com/api/profile/sync", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          clerkId: user.id,
-          name: user.fullName,
-          imageUrl: user.imageUrl,
-          university: formData.university,
-          career: formData.career,
-          topics: topicsArray
-        })
-      })
-
-      if (res.ok) alert("✅ Perfil sincronizado en la red UniMatch")
-      else alert("❌ Error en el servidor")
-    } catch (error) {
-      alert("❌ No se pudo conectar con el servidor")
-    } finally {
-      setSaving(false)
-    }
-  }
 
   return (
-    <div className="max-w-2xl mx-auto p-6 space-y-6">
-      <h1 className="text-2xl font-bold text-blue-400">Mi Perfil Universitario</h1>
-      <input 
-        className="w-full p-3 bg-gray-900 border border-blue-500/30 rounded" 
-        placeholder="Universidad" 
-        onChange={(e) => setFormData({...formData, university: e.target.value})}
-      />
-      <input 
-        className="w-full p-3 bg-gray-900 border border-blue-500/30 rounded" 
-        placeholder="Carrera" 
-        onChange={(e) => setFormData({...formData, career: e.target.value})}
-      />
-      <textarea 
-        className="w-full p-3 bg-gray-900 border border-blue-500/30 rounded" 
-        placeholder="Temas de interés (separados por coma)" 
-        onChange={(e) => setFormData({...formData, topics: e.target.value})}
-      />
-      <button 
-        onClick={handleSave}
-        disabled={saving}
-        className="w-full py-4 bg-blue-600 rounded-lg font-bold hover:bg-blue-700 transition-all disabled:opacity-50"
-      >
-        {saving ? "SINCRONIZANDO..." : "GUARDAR CAMBIOS"}
-      </button>
+    <div className="min-h-screen bg-[#05070a] text-white p-4 md:p-8">
+      <div className="max-w-4xl mx-auto bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl">
+        {/* Header con gradiente */}
+        <div className="h-32 bg-gradient-to-r from-blue-600 to-purple-600 opacity-80" />
+        
+        <div className="px-8 pb-8">
+          <div className="relative -mt-16 mb-6">
+            <img src={user?.imageUrl} className="w-32 h-32 rounded-2xl border-4 border-[#05070a] shadow-xl" />
+            <div className="absolute bottom-0 left-24 bg-green-500 w-6 h-6 rounded-full border-4 border-[#05070a]" />
+          </div>
+
+          <h1 className="text-3xl font-bold">{user?.fullName}</h1>
+          <p className="text-blue-400 mb-8 font-mono tracking-widest">ESTUDIANTE VERIFICADO</p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <label className="block text-xs font-bold text-gray-400 uppercase">Universidad</label>
+              <input className="w-full bg-white/5 border border-white/10 rounded-xl p-4 focus:border-blue-500 outline-none transition-all" placeholder="Ej: UNdeC" />
+            </div>
+            <div className="space-y-4">
+              <label className="block text-xs font-bold text-gray-400 uppercase">Especialidad</label>
+              <input className="w-full bg-white/5 border border-white/10 rounded-xl p-4 focus:border-blue-500 outline-none transition-all" placeholder="Ej: Ingeniería en Sistemas" />
+            </div>
+          </div>
+
+          <button onClick={() => alert('Guardando...')} className="mt-10 w-full py-4 bg-blue-600 hover:bg-blue-500 rounded-2xl font-bold shadow-lg shadow-blue-900/20 transition-all">
+            ACTUALIZAR NODO CENTRAL
+          </button>
+        </div>
+      </div>
     </div>
   )
 }
