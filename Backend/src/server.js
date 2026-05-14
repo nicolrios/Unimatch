@@ -25,51 +25,55 @@ const driver = neo4j.driver(
 })();
 
 // --- RUTAS ---
-
-// 1. Sincronización de Perfil
-app.post('/api/profile/sync', async (req, res) => {
-    const { clerkId, name, university, topics, imageUrl, career } = req.body;
-    if (!clerkId) return res.status(400).json({ error: "clerkId requerido" });
+// 1. Enviar Solicitud de Match
+app.post('/api/matches/request', async (req, res) => {
+    const { fromId, toId } = req.body;
     const session = driver.session();
     try {
         await session.run(`
-            MERGE (u:Usuario {id: $clerkId})
-            SET u.name = $name, u.university = $university, u.imageUrl = $imageUrl, u.career = $career
-            WITH u
-            OPTIONAL MATCH (u)-[r:INTERESADO_EN]->(:Tema) DELETE r
-            WITH u
-            UNWIND (CASE WHEN $topics = [] THEN [null] ELSE $topics END) AS temaNombre
-            WITH u, temaNombre WHERE temaNombre IS NOT NULL
-            MERGE (t:Tema {nombre: temaNombre})
-            MERGE (u)-[:INTERESADO_EN]->(t)
-            RETURN u
-        `, { clerkId, name, university, topics: topics || [], imageUrl, career });
+            MATCH (a:Usuario {id: $fromId}), (b:Usuario {id: $toId})
+            MERGE (a)-[r:SOLICITUD_ENVIADA]->(b)
+            SET r.status = 'pendiente'
+            RETURN r
+        `, { fromId, toId });
         res.status(200).json({ success: true });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    } finally { await session.close(); }
+    } catch (error) { res.status(500).json({ error: error.message }); }
+    finally { await session.close(); }
 });
 
-// 2. Motor de Sugerencias (Matches por Intereses)
-app.get('/api/matches/suggestions/:clerkId', async (req, res) => {
+// 2. Obtener todo el panel de Matches (Sugerencias, Pendientes, Confirmados)
+app.get('/api/matches/panel/:clerkId', async (req, res) => {
     const { clerkId } = req.params;
     const session = driver.session();
     try {
-        const result = await session.run(`
-            MATCH (u:Usuario {id: $clerkId})-[:INTERESADO_EN]->(t:Tema)<-[:INTERESADO_EN]-(sugerencia:Usuario)
-            WHERE u <> sugerencia
-            RETURN sugerencia, count(t) AS temasEnComun, collect(t.nombre) AS temasNombres
-            ORDER BY temasEnComun DESC LIMIT 6
+        // Sugerencias (Lo que ya teníamos)
+        const suggRes = await session.run(`
+            MATCH (u:Usuario {id: $clerkId})-[:INTERESADO_EN]->(t:Tema)<-[:INTERESADO_EN]-(s:Usuario)
+            WHERE u <> s AND NOT (u)-[:SOLICITUD_ENVIADA]-(s)
+            RETURN s, count(t) AS temasEnComun LIMIT 5
         `, { clerkId });
-        const suggestions = result.records.map(record => ({
-            ...record.get('sugerencia').properties,
-            commonTopicsCount: record.get('temasEnComun'),
-            commonTopics: record.get('temasNombres')
-        }));
-        res.status(200).json(suggestions);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    } finally { await session.close(); }
+
+        // Solicitudes recibidas
+        const reqRes = await session.run(`
+            MATCH (remitente:Usuario)-[r:SOLICITUD_ENVIADA]->(u:Usuario {id: $clerkId})
+            WHERE r.status = 'pendiente'
+            RETURN remitente
+        `, { clerkId });
+
+        // Matches confirmados (Cuando ambos se enviaron o uno aceptó)
+        const confirmedRes = await session.run(`
+            MATCH (u:Usuario {id: $clerkId})-[r:SOLICITUD_ENVIADA]-(m:Usuario)
+            WHERE r.status = 'aceptado'
+            RETURN m
+        `, { clerkId });
+
+        res.json({
+            suggestions: suggRes.records.map(r => r.get('s').properties),
+            requests: reqRes.records.map(r => r.get('remitente').properties),
+            confirmed: confirmedRes.records.map(r => r.get('m').properties)
+        });
+    } catch (error) { res.status(500).json({ error: error.message }); }
+    finally { await session.close(); }
 });
 
 // 3. Búsqueda Global (Nombre o Carrera)
