@@ -49,7 +49,7 @@ export default function MatchesPage() {
             <h3 className="text-pink-500 text-[10px] font-black tracking-widest mb-2 uppercase flex items-center gap-2">
               <span className="w-2 h-2 bg-pink-500 rounded-full shadow-[0_0_8px_#ec4899]"></span> Matches Confirmados
             </h3>
-            <p className="text-xs text-gray-500 italic">No hay conexiones activas en este nodo.</p>
+            <p className="text-xs text-gray-500 italic">No hay conexiones activas.</p>
           </div>
           <div className="bg-white/[0.02] backdrop-blur-xl border border-white/5 p-6 rounded-3xl group hover:border-violet-500/30 transition-all">
             <h3 className="text-violet-500 text-[10px] font-black tracking-widest mb-2 uppercase flex items-center gap-2">
@@ -96,13 +96,13 @@ export default function MatchesPage() {
 
                 {/* Botón Acción */}
                 <button className="w-full py-4 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-pink-600 hover:to-violet-600 rounded-2xl font-black text-[10px] tracking-[0.2em] transition-all duration-500 shadow-lg shadow-blue-900/40 uppercase">
-                  Establecer Conexión
+                  Match
                 </button>
               </div>
             </div>
           )) : (
             <div className="col-span-full py-20 text-center border-2 border-dashed border-white/5 rounded-[3rem]">
-              <p className="text-gray-600 font-mono tracking-widest">NO SE DETECTARON NODOS COMPATIBLES</p>
+              <p className="text-gray-600 font-mono tracking-widest">NO SE ENCONTRARON COMPAÑEROS COMPATIBLES</p>
             </div>
           )}
         </div>
