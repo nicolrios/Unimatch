@@ -14,44 +14,48 @@ const driver = neo4j.driver(
     { disableLosslessIntegers: true, connectionTimeout: 20000 }
 );
 
-// 1. Sincronización de Perfil (Guardar Datos)
-app.post('/api/profile/sync', async (req, res) => {
-    const { clerkId, name, university, topics, imageUrl, career, bio } = req.body;
+// --- 1. ENVIAR SOLICITUD DE MATCH ---
+app.post('/api/matches/request', async (req, res) => {
+    const { fromId, toId } = req.body;
     const session = driver.session();
     try {
         await session.run(`
-            MERGE (u:Usuario {id: $clerkId})
-            SET u.name = $name, u.university = $university, u.imageUrl = $imageUrl, u.career = $career, u.bio = $bio
-            WITH u
-            OPTIONAL MATCH (u)-[r:INTERESADO_EN]->(:Tema) DELETE r
-            WITH u
-            UNWIND (CASE WHEN $topics = [] THEN [null] ELSE $topics END) AS temaNombre
-            WITH u, temaNombre WHERE temaNombre IS NOT NULL
-            MERGE (t:Tema {nombre: toUpper(trim(temaNombre))})
-            MERGE (u)-[:INTERESADO_EN]->(t)
-            RETURN u
-        `, { clerkId, name, university, topics: topics || [], imageUrl, career, bio });
-        res.status(200).json({ success: true });
-    } catch (error) { res.status(500).json({ error: error.message }); }
-    finally { await session.close(); }
-});
-
-// 2. Panel de Matches (Sugerencias, Solicitudes y Activos)
-app.get('/api/matches/search', async (req, res) => {
-    const { clerkId, topic } = req.query;
-    const session = driver.session();
-    try {
-        const result = await session.run(`
-            MATCH (u:Usuario {id: $clerkId})
-            MATCH (target:Usuario)-[:INTERESADO_EN]->(t:Tema)
-            WHERE t.nombre CONTAINS toUpper($topic) AND target.id <> $clerkId
-            RETURN DISTINCT target
-            LIMIT 10
-        `, { clerkId, topic });
-        res.json({ results: result.records.map(r => r.get('target').properties) });
+            MATCH (a:Usuario {id: $fromId}), (b:Usuario {id: $toId})
+            MERGE (a)-[r:SOLICITUD {status: 'pendiente', fecha: datetime()}]->(b)
+            RETURN r
+        `, { fromId, toId });
+        res.json({ success: true, message: "Enlace en espera" });
     } catch (e) { res.status(500).json({ error: e.message }); }
     finally { await session.close(); }
 });
 
+// --- 2. ACEPTAR SOLICITUD DE MATCH ---
+app.post('/api/matches/accept', async (req, res) => {
+    const { fromId, toId } = req.body; // toId soy yo (quien acepta)
+    const session = driver.session();
+    try {
+        await session.run(`
+            MATCH (a:Usuario {id: $fromId})-[r:SOLICITUD]->(b:Usuario {id: $toId})
+            SET r.status = 'aceptado', r.fecha_match = datetime()
+            RETURN r
+        `, { fromId, toId });
+        res.json({ success: true, message: "Match concretado" });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+    finally { await session.close(); }
+});
+
+// --- 3. CONTADOR DE NOTIFICACIONES ---
+app.get('/api/notifications/count/:clerkId', async (req, res) => {
+    const { clerkId } = req.params;
+    const session = driver.session();
+    try {
+        const result = await session.run(`
+            MATCH (u:Usuario {id: $clerkId})
+            OPTIONAL MATCH (remitente)-[r:SOLICITUD {status: 'pendiente'}]->(u)
+            RETURN count(r) as total
+        `, { clerkId });
+        res.json({ count: result.records[0].get('total') });
+    } finally { await session.close(); }
+});
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => console.log(`🚀 Servidor activo en puerto ${PORT}`));
