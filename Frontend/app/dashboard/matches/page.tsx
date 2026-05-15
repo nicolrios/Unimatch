@@ -30,37 +30,50 @@ export default function MatchesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#05070a] text-white p-10 relative overflow-hidden">
-      {/* Luces de fondo originales */}
-      <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-pink-600/5 rounded-full blur-[120px]" />
+    <div className="min-h-screen bg-[#05070a] text-white p-6 md:p-12 relative overflow-hidden font-sans">
       
-      <div className="max-w-5xl mx-auto relative z-10">
+      {/* CAPA DE INTERFAZ FUTURISTA (GRID Y GLOWS) */}
+      <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 pointer-events-none" />
+      <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_50%,_rgba(236,72,153,0.05),transparent_70%)]" />
+      <div className="absolute -top-24 -right-24 w-96 h-96 bg-blue-600/10 rounded-full blur-[120px] animate-pulse" />
+
+      <div className="max-w-6xl mx-auto relative z-10">
         
-        {/* HEADER ORIGINAL */}
-        <div className="mb-16">
-          <p className="text-[10px] font-black text-pink-500 tracking-[0.4em] uppercase mb-2">Panel de Sincronización</p>
-          <h1 className="text-6xl font-black italic tracking-tighter">Mis <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-violet-500">Matches</span></h1>
+        {/* HEADER CON EL SLOGAN QUE PEDISTE */}
+        <div className="relative mb-20 text-center md:text-left">
+          <div className="inline-block px-6 py-2 mb-6 rounded-2xl border border-pink-500/30 bg-pink-500/5 backdrop-blur-md shadow-[0_0_15px_rgba(236,72,153,0.2)]">
+             <span className="text-[10px] font-black uppercase tracking-[0.5em] text-pink-400">Encuentra tu match perfecto</span>
+          </div>
+          <div className="flex flex-col gap-1">
+            <p className="text-[10px] font-black text-gray-500 tracking-[0.8em] uppercase ml-1">Panel de Sincronización</p>
+            <h1 className="text-7xl font-black italic tracking-tighter leading-none">
+              Mis <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 via-violet-500 to-blue-500 drop-shadow-[0_0_30px_rgba(236,72,153,0.3)]">Matches</span>
+            </h1>
+          </div>
         </div>
 
-        {/* SECCIÓN SOLICITUDES - ESTÉTICA CAPSULA */}
-        <div className="mb-20">
-          <div className="flex items-center gap-4 mb-8">
-            <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-500">Solicitudes Recibidas</h2>
-            <div className="h-[1px] flex-1 bg-white/5" />
+        {/* SECCIÓN A: MATCHES PENDIENTES */}
+        <div className="mb-24">
+          <div className="flex items-center gap-6 mb-12">
+            <h2 className="text-sm font-black uppercase tracking-[0.4em] text-pink-500">Matches Pendientes</h2>
+            <div className="h-[2px] flex-1 bg-gradient-to-r from-pink-500/50 via-pink-500/10 to-transparent" />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {requests.length > 0 ? requests.map((req: any) => (
-              <div key={req.id} className="relative group">
-                <div className="absolute -inset-1 bg-gradient-to-r from-pink-600 to-violet-600 rounded-[2.5rem] blur opacity-20 group-hover:opacity-40 transition duration-500" />
-                <div className="relative bg-[#0a0f1a] border border-white/10 rounded-[2.5rem] p-8 flex items-center gap-6">
-                  <img src={req.imageUrl} className="w-20 h-20 rounded-2xl object-cover border border-white/10" />
+              <div key={req.id} className="group relative">
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-pink-600 to-violet-600 rounded-[3rem] blur opacity-20 group-hover:opacity-60 transition duration-1000"></div>
+                <div className="relative bg-[#0a0f1a]/90 backdrop-blur-3xl border border-white/10 rounded-[3rem] p-10 flex items-center gap-8 overflow-hidden">
+                  {/* Decoración de fondo de tarjeta */}
+                  <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-pink-600/5 rounded-full blur-3xl group-hover:bg-pink-600/10 transition-all"></div>
+                  
+                  <img src={req.imageUrl} className="w-24 h-24 rounded-3xl object-cover border-2 border-pink-500/20 group-hover:border-pink-500 transition-all duration-500 shadow-2xl" />
                   <div className="flex-1">
-                    <h3 className="text-xl font-black">{req.name}</h3>
-                    <p className="text-[9px] text-pink-500 font-black uppercase tracking-widest mb-4">{req.career}</p>
+                    <h3 className="text-2xl font-black mb-1 group-hover:text-pink-400 transition-colors">{req.name}</h3>
+                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] mb-6">{req.career}</p>
                     <button 
                       onClick={() => handleAccept(req.id)}
-                      className="bg-white/5 hover:bg-white/10 border border-white/10 px-6 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all"
+                      className="group/btn relative px-8 py-3 bg-pink-600/10 hover:bg-pink-600 border border-pink-500/30 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-500"
                     >
                       Aceptar Enlace
                     </button>
@@ -68,34 +81,43 @@ export default function MatchesPage() {
                 </div>
               </div>
             )) : (
-              <div className="col-span-full border-2 border-dashed border-white/5 rounded-[3rem] py-16 flex items-center justify-center opacity-30 text-[10px] font-black uppercase tracking-widest">
-                Sin solicitudes pendientes
+              <div className="col-span-full border border-white/5 bg-white/[0.02] rounded-[4rem] py-24 flex flex-col items-center justify-center gap-6 opacity-40 italic">
+                <div className="w-16 h-16 border-2 border-dashed border-pink-500/30 rounded-full flex items-center justify-center animate-spin-slow">
+                   <span className="text-pink-500 opacity-50 font-black">?</span>
+                </div>
+                <p className="text-[11px] font-black uppercase tracking-[0.5em]">Sin solicitudes en este sector de la red</p>
               </div>
             )}
           </div>
         </div>
 
-        {/* SECCIÓN CONFIRMADOS - ESTÉTICA CAPSULA */}
+        {/* SECCIÓN B: MATCHES CONFIRMADOS */}
         <div>
-          <div className="flex items-center gap-4 mb-8">
-            <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-500">Enlaces Confirmados</h2>
-            <div className="h-[1px] flex-1 bg-white/5" />
+          <div className="flex items-center gap-6 mb-12">
+            <h2 className="text-sm font-black uppercase tracking-[0.4em] text-blue-400">Matches Confirmados</h2>
+            <div className="h-[2px] flex-1 bg-gradient-to-r from-blue-500/50 via-blue-500/10 to-transparent" />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {activeMatches.length > 0 ? activeMatches.map((match: any) => (
-              <div key={match.id} className="bg-white/[0.03] border border-white/5 rounded-[2rem] p-6 flex flex-col items-center text-center hover:border-blue-500/30 transition-all">
-                <img src={match.imageUrl} className="w-16 h-16 rounded-xl object-cover mb-4 grayscale hover:grayscale-0 transition-all" />
-                <h4 className="font-bold text-sm">{match.name}</h4>
-                <p className="text-[8px] text-blue-400 font-black uppercase tracking-tighter mb-4">{match.career}</p>
-                <div className="flex items-center gap-2 px-3 py-1 bg-blue-500/10 rounded-full border border-blue-500/20">
-                  <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" />
-                  <span className="text-[7px] font-black text-blue-400 uppercase">Activo</span>
+              <div key={match.id} className="relative group bg-white/[0.02] border border-white/5 rounded-[3rem] p-8 flex flex-col items-center text-center transition-all duration-700 hover:bg-blue-600/5 hover:border-blue-500/30">
+                <div className="relative mb-6">
+                   <div className="absolute -inset-2 bg-blue-500 rounded-full blur-xl opacity-0 group-hover:opacity-20 transition duration-500"></div>
+                   <img src={match.imageUrl} className="relative w-20 h-20 rounded-[2rem] object-cover border border-white/10 group-hover:scale-110 transition-transform duration-700" />
+                </div>
+                <h4 className="text-lg font-black mb-1">{match.name}</h4>
+                <p className="text-[9px] text-blue-400 font-black uppercase tracking-widest mb-6">{match.career}</p>
+                
+                <div className="flex items-center gap-2 px-4 py-1.5 bg-blue-500/10 rounded-full border border-blue-500/20 shadow-[0_0_10px_rgba(59,130,246,0.1)]">
+                  <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse shadow-[0_0_5px_#3b82f6]" />
+                  <span className="text-[8px] font-black text-blue-400 uppercase tracking-tighter">Enlace Activo</span>
                 </div>
               </div>
             )) : (
-              <div className="col-span-full border-2 border-dashed border-white/5 rounded-[3rem] py-16 flex items-center justify-center opacity-30 text-[10px] font-black uppercase tracking-widest text-center">
-                No tienes matches activos.<br/>Usa el buscador para conectar.
+              <div className="col-span-full border border-white/5 rounded-[4rem] py-20 flex flex-col items-center justify-center opacity-30">
+                <p className="text-[10px] font-black uppercase tracking-[0.4em] text-center leading-loose">
+                   No tienes matches activos.<br/>Usa el buscador para conectar con la red.
+                </p>
               </div>
             )}
           </div>
