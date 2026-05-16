@@ -14,7 +14,7 @@ const driver = neo4j.driver(
     { disableLosslessIntegers: true }
 );
 
-// --- 1. PERFIL: SINCRONIZACIÓN (CREAR/ACTUALIZAR) ---
+// --- 1. PERFIL: SINCRONIZACIÓN DE NODOS ---
 app.post('/api/profile/sync', async (req, res) => {
     const { clerkId, name, university, topics, imageUrl, career, bio } = req.body;
     const session = driver.session();
@@ -37,17 +37,17 @@ app.post('/api/profile/sync', async (req, res) => {
     finally { await session.close(); }
 });
 
-// --- 2. BÚSQUEDA: FILTRAR POR TEMAS DE INTERÉS ---
+// --- 2. BUSCADOR: RELACIÓN POR TEMA ESPECÍFICO ---
 app.get('/api/matches/search', async (req, res) => {
     const { clerkId, topic } = req.query;
     const session = driver.session();
     try {
         const result = await session.run(`
-            MATCH (u:Usuario {id: $clerkId})
+            MATCH (me:Usuario {id: $clerkId})
             MATCH (target:Usuario)-[:INTERESADO_EN]->(t:Tema)
-            WHERE t.nombre CONTAINS toUpper($topic) 
+            WHERE t.nombre CONTAINS toUpper(trim($topic)) 
               AND target.id <> $clerkId
-              AND NOT (u)-[:SOLICITUD]-(target)
+              AND NOT (me)-[:SOLICITUD]-(target)
             RETURN DISTINCT target {.*} AS user
             LIMIT 12
         `, { clerkId, topic });
@@ -56,7 +56,7 @@ app.get('/api/matches/search', async (req, res) => {
     finally { await session.close(); }
 });
 
-// --- 3. MATCHES: ENVIAR SOLICITUD ---
+// --- 3. MATCHES: ENVIAR SOLICITUD (RELACIÓN PENDIENTE) ---
 app.post('/api/matches/request', async (req, res) => {
     const { fromId, toId } = req.body;
     const session = driver.session();
@@ -71,9 +71,9 @@ app.post('/api/matches/request', async (req, res) => {
     finally { await session.close(); }
 });
 
-// --- 4. MATCHES: ACEPTAR SOLICITUD ---
+// --- 4. MATCHES: ACEPTAR SOLICITUD (RELACIÓN ACEPTADA) ---
 app.post('/api/matches/accept', async (req, res) => {
-    const { fromId, toId } = req.body; // toId es quien acepta
+    const { fromId, toId } = req.body;
     const session = driver.session();
     try {
         await session.run(`
@@ -86,36 +86,45 @@ app.post('/api/matches/accept', async (req, res) => {
     finally { await session.close(); }
 });
 
-// --- 5. PANEL: SUGERENCIAS, SOLICITUDES Y MATCHES ---
+// --- 5. PANEL CENTRAL: SUGERENCIAS POR AFINIDAD, SOLICITUDES Y ACTIVOS ---
 app.get('/api/matches/panel/:clerkId', async (req, res) => {
     const { clerkId } = req.params;
     const session = driver.session();
     try {
         const result = await session.run(`
-            MATCH (u:Usuario {id: $clerkId})
-            // Sugerencias: Usuarios sin relación previa
-            OPTIONAL MATCH (s:Usuario) 
-            WHERE s.id <> $clerkId AND NOT (u)-[:SOLICITUD]-(s)
-            WITH u, collect(DISTINCT s {.*})[0..6] as sug
-            // Solicitudes recibidas: Alguien me envió a mí
-            OPTIONAL MATCH (remitente:Usuario)-[:SOLICITUD {status: 'pendiente'}]->(u)
-            WITH sug, collect(DISTINCT remitente {.*}) as req, u
-            // Matches activos: Ambos aceptamos
-            OPTIONAL MATCH (u)-[:SOLICITUD {status: 'aceptado'}]-(amigo:Usuario)
-            RETURN sug, req, collect(DISTINCT amigo {.*}) as active
+            MATCH (me:Usuario {id: $clerkId})
+            
+            // Sugerencias inteligentes por Temas en común
+            OPTIONAL MATCH (me)-[:INTERESADO_EN]->(t:Tema)<-[:INTERESADO_EN]-(s:Usuario)
+            WHERE s.id <> $clerkId AND NOT (me)-[:SOLICITUD]-(s)
+            WITH me, collect(DISTINCT s {.*})[0..6] as sugTemas
+            
+            // Relleno por misma carrera si faltan sugerencias
+            OPTIONAL MATCH (s2:Usuario {career: me.career})
+            WHERE s2.id <> $clerkId AND NOT (me)-[:SOLICITUD]-(s2) AND NOT s2 {.*} IN sugTemas
+            WITH me, (sugTemas + collect(DISTINCT s2 {.*}))[0..6] as sugFinales
+            
+            // Solicitudes recibidas pendientes
+            OPTIONAL MATCH (remitente:Usuario)-[:SOLICITUD {status: 'pendiente'}]->(me)
+            WITH sugFinales, collect(DISTINCT remitente {.*}) as req, me
+            
+            // Enlaces confirmados activos
+            OPTIONAL MATCH (me)-[:SOLICITUD {status: 'aceptado'}]-(amigo:Usuario)
+            
+            RETURN sugFinales as sug, req, collect(DISTINCT amigo {.*}) as active
         `, { clerkId });
         
         const record = result.records[0];
         res.json({
-            suggestions: record.get('sug'),
-            requests: record.get('req'),
-            active: record.get('active')
+            suggestions: record.get('sug') || [],
+            requests: record.get('req') || [],
+            active: record.get('active') || []
         });
     } catch (e) { res.status(500).json({ error: e.message }); }
     finally { await session.close(); }
 });
 
-// --- 6. NOTIFICACIONES: CONTADOR ---
+// --- 6. CONTADOR DE NOTIFICACIONES ---
 app.get('/api/notifications/count/:clerkId', async (req, res) => {
     const { clerkId } = req.params;
     const session = driver.session();
