@@ -7,7 +7,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// --- CONFIGURACIÓN DE NEO4J ---
+// --- CONFIGURACIÓN DE CONEXIÓN NEO4J ---
 const driver = neo4j.driver(
     process.env.NEO4J_URI,
     neo4j.auth.basic(process.env.NEO4J_USER, process.env.NEO4J_PASSWORD),
@@ -94,15 +94,23 @@ app.get('/api/matches/panel/:clerkId', async (req, res) => {
         const result = await session.run(`
             MATCH (me:Usuario {id: $clerkId})
             
-            // Sugerencias inteligentes por Temas en común
-            OPTIONAL MATCH (me)-[:INTERESADO_EN]->(t:Tema)<-[:INTERESADO_EN]-(s:Usuario)
+            // Sugerencias: Buscamos usuarios que no tengan solicitudes previas conmigo
+            OPTIONAL MATCH (s:Usuario)
             WHERE s.id <> $clerkId AND NOT (me)-[:SOLICITUD]-(s)
-            WITH me, collect(DISTINCT s {.*})[0..6] as sugTemas
             
-            // Relleno por misma carrera si faltan sugerencias
-            OPTIONAL MATCH (s2:Usuario {career: me.career})
-            WHERE s2.id <> $clerkId AND NOT (me)-[:SOLICITUD]-(s2) AND NOT s2 {.*} IN sugTemas
-            WITH me, (sugTemas + collect(DISTINCT s2 {.*}))[0..6] as sugFinales
+            // Calculamos cuántos temas en común tienen
+            OPTIONAL MATCH (me)-[:INTERESADO_EN]->(t:Tema)<-[:INTERESADO_EN]-(s)
+            WITH me, s, count(t) as temasEnComun
+            WHERE s IS NOT NULL
+            
+            // Puntuamos la afinidad (Misma carrera suma 2 puntos + 1 punto por cada tema compartido)
+            WITH s, temasEnComun,
+                 (CASE WHEN toUpper(trim(s.career)) = toUpper(trim(me.career)) THEN 2 ELSE 0 END + temasEnComun) as pesoAfinidad,
+                 me
+            WHERE pesoAfinidad > 0
+            
+            ORDER BY pesoAfinidad DESC
+            WITH me, collect(DISTINCT s {.*})[0..6] as sugFinales
             
             // Solicitudes recibidas pendientes
             OPTIONAL MATCH (remitente:Usuario)-[:SOLICITUD {status: 'pendiente'}]->(me)
