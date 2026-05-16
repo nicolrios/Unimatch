@@ -65,7 +65,7 @@ export default function ProfilePage() {
           <div className="relative bg-[#0a0f1a]/60 backdrop-blur-2xl rounded-[3rem] p-10 flex flex-col md:flex-row gap-12 items-center">
             <div className="relative">
               <div className="absolute -inset-2 bg-gradient-to-tr from-pink-500 to-blue-500 rounded-[2.5rem] blur-xl opacity-20" />
-              <img src={user?.imageUrl} className="relative w-44 h-44 rounded-[2.5rem] object-cover border border-white/20 shadow-2xl" />
+              
             </div>
             <div className="flex-1">
               <h2 className="text-4xl font-black mb-4 tracking-tight">{user?.fullName}</h2>

@@ -10,12 +10,10 @@ export default function SearchPage() {
   const [sentMatches, setSentMatches] = useState<string[]>([])
   const [sendingId, setSendingId] = useState<string | null>(null)
 
-  // Función para buscar (se activa al presionar el botón o al cargar)
   const handleSearch = async () => {
     if (!user) return
     setLoading(true)
     
-    // Si la query está vacía, trae sugerencias generales, si no, filtra por tema
     const endpoint = query.trim() 
       ? `https://unimatch-backend-vy3b.onrender.com/api/matches/search?clerkId=${user.id}&topic=${query}`
       : `https://unimatch-backend-vy3b.onrender.com/api/matches/panel/${user.id}`
@@ -23,19 +21,15 @@ export default function SearchPage() {
     try {
       const response = await fetch(endpoint)
       const json = await response.json()
-      // Adaptamos la respuesta según el endpoint que responda
       setResults(query.trim() ? json.results : json.suggestions)
     } catch (error) {
-      console.error("Error en búsqueda:", error)
+      console.error(error)
     } finally {
       setLoading(false)
     }
   }
 
-  // Carga inicial de sugerencias
-  useEffect(() => {
-    handleSearch()
-  }, [user])
+  useEffect(() => { handleSearch() }, [user])
 
   const handleMatchRequest = async (targetId: string) => {
     if (!user) return
@@ -67,7 +61,6 @@ export default function SearchPage() {
           <p className="text-gray-500 font-medium tracking-wide text-lg">En busca de tu nuevo match de estudio</p>
         </div>
 
-        {/* BARRA DE BÚSQUEDA FUNCIONAL */}
         <div className="relative group mb-20">
           <div className="absolute -inset-1 bg-gradient-to-r from-pink-600 via-violet-600 to-blue-600 rounded-[2.5rem] blur opacity-20 group-hover:opacity-40 transition duration-700"></div>
           <div className="relative flex items-center bg-[#0a0f1a]/80 backdrop-blur-2xl rounded-[2.5rem] p-3 border border-white/10 shadow-2xl">
@@ -90,12 +83,9 @@ export default function SearchPage() {
           </div>
         </div>
 
-        {/* GRILLA DE RESULTADOS */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {loading ? (
-             <div className="col-span-full py-20 text-center">
-                <div className="inline-block w-10 h-10 border-2 border-pink-500 border-t-transparent rounded-full animate-spin"></div>
-             </div>
+             <div className="col-span-full py-20 text-center"><div className="inline-block w-10 h-10 border-2 border-pink-500 border-t-transparent rounded-full animate-spin"></div></div>
           ) : results?.length > 0 ? (
             results.map((m: any) => {
               const isSent = sentMatches.includes(m.id);
@@ -104,7 +94,8 @@ export default function SearchPage() {
                   <div className="flex flex-col items-center text-center">
                     <img src={m.imageUrl} className="w-28 h-28 rounded-[2rem] object-cover border border-white/10 shadow-2xl mb-6" />
                     <h3 className="text-xl font-black mb-1 tracking-tight">{m.name}</h3>
-                    <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-8">{m.career}</p>
+                    <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-2">{m.career}</p>
+                    <p className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-8">{m.university}</p>
 
                     {isSent ? (
                       <div className="w-full py-4 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center gap-3">
@@ -125,7 +116,7 @@ export default function SearchPage() {
               );
             })
           ) : (
-            <div className="col-span-full py-32 border-2 border-dashed border-white/5 rounded-[4rem] flex flex-col items-center justify-center opacity-30">
+            <div className="col-span-full py-32 border-2 border-dashed border-white/5 rounded-[4rem] flex items-center justify-center opacity-30">
               <p className="text-[10px] font-black tracking-[0.4em] uppercase">No se detectaron nodos con ese tema</p>
             </div>
           )}
