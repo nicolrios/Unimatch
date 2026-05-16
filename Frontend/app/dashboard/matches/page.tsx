@@ -63,7 +63,6 @@ export default function MatchesPage() {
               <div key={req.id} className="group relative">
                 <div className="absolute -inset-0.5 bg-gradient-to-r from-pink-600 to-violet-600 rounded-[3rem] blur opacity-20 group-hover:opacity-60 transition duration-1000"></div>
                 <div className="relative bg-[#0a0f1a]/90 backdrop-blur-3xl border border-white/10 rounded-[3rem] p-10 flex items-center gap-8 overflow-hidden">
-                  <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-pink-600/5 rounded-full blur-3xl group-hover:bg-pink-600/10 transition-all"></div>
                   
                   <div className="w-20 h-20 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center font-black text-2xl uppercase text-pink-500 shadow-inner">{req.name?.charAt(0)}</div>
                   
