@@ -39,7 +39,7 @@ export default function MatchesPage() {
 
       <div className="max-w-6xl mx-auto relative z-10">
         
-        {/* HEADER CON EL SLOGAN QUE PEDISTE */}
+        {/* HEADER REQUISITO CLIENTE */}
         <div className="relative mb-20 text-center md:text-left">
           <div className="inline-block px-6 py-2 mb-6 rounded-2xl border border-pink-500/30 bg-pink-500/5 backdrop-blur-md shadow-[0_0_15px_rgba(236,72,153,0.2)]">
              <span className="text-[10px] font-black uppercase tracking-[0.5em] text-pink-400">Encuentra tu match perfecto</span>
@@ -60,11 +60,12 @@ export default function MatchesPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {requests.length > 0 ? requests.map((req: any) => (
+            {loading ? (
+              <div className="col-span-full text-center py-10"><div className="w-8 h-8 border-2 border-pink-500 border-t-transparent rounded-full animate-spin inline-block"></div></div>
+            ) : requests.length > 0 ? requests.map((req: any) => (
               <div key={req.id} className="group relative">
                 <div className="absolute -inset-0.5 bg-gradient-to-r from-pink-600 to-violet-600 rounded-[3rem] blur opacity-20 group-hover:opacity-60 transition duration-1000"></div>
                 <div className="relative bg-[#0a0f1a]/90 backdrop-blur-3xl border border-white/10 rounded-[3rem] p-10 flex items-center gap-8 overflow-hidden">
-                  {/* Decoración de fondo de tarjeta */}
                   <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-pink-600/5 rounded-full blur-3xl group-hover:bg-pink-600/10 transition-all"></div>
                   
                   <img src={req.imageUrl} className="w-24 h-24 rounded-3xl object-cover border-2 border-pink-500/20 group-hover:border-pink-500 transition-all duration-500 shadow-2xl" />
@@ -73,7 +74,7 @@ export default function MatchesPage() {
                     <p className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] mb-6">{req.career}</p>
                     <button 
                       onClick={() => handleAccept(req.id)}
-                      className="group/btn relative px-8 py-3 bg-pink-600/10 hover:bg-pink-600 border border-pink-500/30 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-500"
+                      className="relative px-8 py-3 bg-pink-600/10 hover:bg-pink-600 border border-pink-500/30 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-500"
                     >
                       Aceptar Enlace
                     </button>
@@ -82,9 +83,6 @@ export default function MatchesPage() {
               </div>
             )) : (
               <div className="col-span-full border border-white/5 bg-white/[0.02] rounded-[4rem] py-24 flex flex-col items-center justify-center gap-6 opacity-40 italic">
-                <div className="w-16 h-16 border-2 border-dashed border-pink-500/30 rounded-full flex items-center justify-center animate-spin-slow">
-                   <span className="text-pink-500 opacity-50 font-black">?</span>
-                </div>
                 <p className="text-[11px] font-black uppercase tracking-[0.5em]">Sin solicitudes en este sector de la red</p>
               </div>
             )}
@@ -99,7 +97,9 @@ export default function MatchesPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {activeMatches.length > 0 ? activeMatches.map((match: any) => (
+            {loading ? (
+              <div className="col-span-full text-center py-10"><div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin inline-block"></div></div>
+            ) : activeMatches.length > 0 ? activeMatches.map((match: any) => (
               <div key={match.id} className="relative group bg-white/[0.02] border border-white/5 rounded-[3rem] p-8 flex flex-col items-center text-center transition-all duration-700 hover:bg-blue-600/5 hover:border-blue-500/30">
                 <div className="relative mb-6">
                    <div className="absolute -inset-2 bg-blue-500 rounded-full blur-xl opacity-0 group-hover:opacity-20 transition duration-500"></div>
