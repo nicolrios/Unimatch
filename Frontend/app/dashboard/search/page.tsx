@@ -70,7 +70,6 @@ export default function SearchPage() {
                 <div key={m.id} className="group relative bg-[#0a0f1a]/60 backdrop-blur-xl border border-white/5 rounded-[3rem] p-8 transition-all duration-500 hover:border-blue-500/30">
                   <div className="flex flex-col items-center text-center">
                     
-                    {/* ESFERA CRISTAL CON INICIAL EN VEZ DE IMAGEN */}
                     <div className="w-24 h-24 rounded-[2rem] bg-gradient-to-b from-white/10 to-white/[0.02] border border-white/10 shadow-2xl flex items-center justify-center mb-6">
                       <span className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white to-gray-500 uppercase">{m.name?.charAt(0)}</span>
                     </div>
